@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Services\AI\AiProviderManager;
 use App\Services\MediaResolver;
 use App\Services\SettingsService;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -23,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
         // every caller within a request.
         $this->app->scoped(SettingsService::class);
         $this->app->scoped(MediaResolver::class);
+
+        // Singleton so tests can swap in the fake provider once and have every
+        // resolution downstream honour it.
+        $this->app->singleton(AiProviderManager::class);
     }
 
     public function boot(): void

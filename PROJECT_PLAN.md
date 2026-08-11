@@ -478,8 +478,9 @@ Queue: supervisor on Linux; NSSM or Task Scheduler if hosting on Windows.
 | 3 — Auth + admin foundation | ✅ Done — 47 tests green |
 | 4 — Posts / categories / tags / media / users | ✅ Done — 94 tests green |
 | 5 — Public website + SEO head | ✅ Done — 128 tests green |
-| 6 — AI generation | Next |
-| 7–10 | Planned above |
+| 6 — AI generation | ✅ Done — Gemini + OpenAI, quality gate, 149 tests green |
+| 7 — Trending + scheduler + auto-publish | Next |
+| 8–10 | Planned above |
 
 **Admin URL:** `/admin/login`. The public site does not link to it and there is no `/login` or `/register`.
 

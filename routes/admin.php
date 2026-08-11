@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\AiGeneratorController;
+use App\Http\Controllers\Admin\AiSettingsController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
@@ -61,6 +63,17 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('/', 'store')->name('store');
         Route::put('{media}', 'update')->name('update');
         Route::delete('{media}', 'destroy')->name('destroy');
+    });
+
+    Route::controller(AiGeneratorController::class)->prefix('ai')->name('ai.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->middleware('throttle:ai-generation')->name('store');
+        Route::post('settings', [AiSettingsController::class, 'update'])->name('settings');
+        Route::get('{generation}', 'show')->name('show');
+        Route::get('{generation}/status', 'status')->name('status');
+        Route::post('{generation}/approve', 'approve')->name('approve');
+        Route::post('{generation}/retry', 'retry')->middleware('throttle:ai-generation')->name('retry');
+        Route::delete('{generation}', 'destroy')->name('destroy');
     });
 
     Route::controller(UserController::class)->prefix('users')->name('users.')->group(function () {
