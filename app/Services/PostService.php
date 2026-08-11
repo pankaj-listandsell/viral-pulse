@@ -6,6 +6,7 @@ use App\Enums\PostStatus;
 use App\Enums\ScheduledPostStatus;
 use App\Models\Category;
 use App\Models\Post;
+use App\Models\PostSlugHistory;
 use App\Models\ScheduledPost;
 use App\Models\Tag;
 use App\Models\User;
@@ -20,6 +21,8 @@ class PostService
         private readonly HtmlSanitizer $sanitizer,
         private readonly ActivityLogger $logger,
         private readonly ContentFeedService $feed,
+        private readonly SitemapService $sitemap,
+        private readonly FeedService $rss,
     ) {}
 
     /**
@@ -58,7 +61,12 @@ class PostService
             $post->fill($this->prepare($data));
 
             if (! empty($data['slug']) && $data['slug'] !== $post->getOriginal('slug')) {
+                $previous = $post->getOriginal('slug');
                 $post->slug = $this->slugs->unique(Post::class, $data['slug'], ignoreId: $post->id);
+
+                if ($post->slug !== $previous) {
+                    $this->rememberSlug($post, $previous);
+                }
             }
 
             $this->applyStatus($post, $data);
@@ -267,6 +275,21 @@ class PostService
     }
 
     /**
+     * Keeps the old URL working after a rename.
+     *
+     * Silently ignored if the slug is already recorded - the same slug can be
+     * given up twice, and the redirect only needs one row either way.
+     */
+    private function rememberSlug(Post $post, ?string $slug): void
+    {
+        if (blank($slug)) {
+            return;
+        }
+
+        PostSlugHistory::updateOrCreate(['slug' => $slug], ['post_id' => $post->id]);
+    }
+
+    /**
      * Mirrors the post's schedule into scheduled_posts, which is what the
      * every-minute publisher command actually reads.
      */
@@ -293,8 +316,12 @@ class PostService
     private function refreshCounters(Post $post, ?int $previousCategoryId = null): void
     {
         // A newly published post must appear on the home page immediately, not
-        // after the feed cache happens to expire.
+        // after the feed cache happens to expire. The sitemap and RSS matter
+        // for the same reason: a stale sitemap sends crawlers to URLs that 404
+        // and hides the ones worth having.
         $this->feed->flush();
+        $this->sitemap->flush();
+        $this->rss->flush();
 
         $this->refreshCategoryCount($post->category_id);
 

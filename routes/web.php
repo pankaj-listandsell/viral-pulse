@@ -1,12 +1,16 @@
 <?php
 
+use App\Http\Controllers\Public\AdsTxtController;
 use App\Http\Controllers\Public\ArchiveController;
+use App\Http\Controllers\Public\FeedController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\LikeController;
 use App\Http\Controllers\Public\NewsletterController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PostController;
+use App\Http\Controllers\Public\RobotsController;
 use App\Http\Controllers\Public\SearchController;
+use App\Http\Controllers\Public\SitemapController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -41,6 +45,24 @@ Route::post('contact', [PageController::class, 'submitContact'])
 
 Route::get('sitemap', [PageController::class, 'sitemapPlaceholder'])->name('sitemap.page');
 
+/*
+ * Machine-readable endpoints. These are the files a crawler and an ad network
+ * look for by exact path, so none of them may move.
+ */
+Route::controller(SitemapController::class)->group(function () {
+    Route::get('sitemap.xml', 'index')->name('sitemap.index');
+    Route::get('sitemap-posts-{page}.xml', 'posts')->whereNumber('page')->name('sitemap.posts');
+    Route::get('sitemap-categories.xml', 'categories')->name('sitemap.categories');
+    Route::get('sitemap-tags.xml', 'tags')->name('sitemap.tags');
+    Route::get('sitemap-pages.xml', 'pages')->name('sitemap.pages');
+});
+
+Route::get('robots.txt', RobotsController::class)->name('robots');
+Route::get('ads.txt', AdsTxtController::class)->name('ads');
+
+Route::get('feed.xml', [FeedController::class, 'index'])->name('feed.index');
+Route::get('feed/{category}.xml', [FeedController::class, 'category'])->name('feed.category');
+
 Route::post('newsletter', [NewsletterController::class, 'subscribe'])
     ->middleware('throttle:newsletter')
     ->name('newsletter.subscribe');
@@ -56,4 +78,7 @@ Route::get('page/{page}', [PageController::class, 'show'])->name('pages.show');
 
 // The article URL sits at the root of its own segment: short, stable and
 // readable, which is what both people and crawlers prefer.
-Route::get('post/{post}', [PostController::class, 'show'])->name('posts.show');
+//
+// Bound as a string rather than a model so a slug that no longer exists can be
+// checked against post_slug_history and 301'd instead of 404'd.
+Route::get('post/{slug}', [PostController::class, 'show'])->name('posts.show');

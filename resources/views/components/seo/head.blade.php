@@ -25,6 +25,11 @@
 <meta name="robots" content="{{ $robots }}">
 <link rel="canonical" href="{{ $canonical }}">
 
+@if(! empty($seo['feed']))
+    {{-- A section feed alongside the site-wide one in the layout. --}}
+    <link rel="alternate" type="application/rss+xml" title="{{ $title }} · RSS" href="{{ $seo['feed'] }}">
+@endif
+
 {{-- Open Graph --}}
 <meta property="og:site_name" content="{{ $siteName }}">
 <meta property="og:type" content="{{ $seo['type'] ?? 'website' }}">

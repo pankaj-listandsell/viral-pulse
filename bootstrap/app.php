@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CanonicalUrl;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -29,6 +30,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
             AddLinkHeadersForPreloadedAssets::class,
+        ]);
+
+        // Runs before the session starts: a redirect this early costs nothing,
+        // and it keeps duplicate URL variants out of the index.
+        $middleware->web(prepend: [
+            CanonicalUrl::class,
         ]);
 
         $middleware->alias([

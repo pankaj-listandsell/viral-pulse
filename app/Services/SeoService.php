@@ -150,6 +150,35 @@ class SeoService
     }
 
     /**
+     * An archive is a list of articles, and saying so lets a crawler read the
+     * order without parsing the markup.
+     *
+     * @param  iterable<int, Post>  $posts
+     * @return array<string, mixed>
+     */
+    public function itemListSchema(iterable $posts, string $name): array
+    {
+        $elements = [];
+
+        foreach ($posts as $post) {
+            $elements[] = [
+                '@type' => 'ListItem',
+                'position' => count($elements) + 1,
+                'url' => route('posts.show', $post->slug),
+                'name' => $post->title,
+            ];
+        }
+
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'ItemList',
+            'name' => $name,
+            'numberOfItems' => count($elements),
+            'itemListElement' => $elements,
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function organizationSchema(): array
