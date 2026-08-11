@@ -2,6 +2,7 @@ import './bootstrap';
 import Alpine from 'alpinejs';
 import collapse from '@alpinejs/collapse';
 import { Chart, registerables } from 'chart.js';
+import { mountIslands } from './islands';
 
 Chart.register(...registerables);
 window.Chart = Chart;
@@ -140,3 +141,7 @@ function initCharts() {
 }
 
 document.addEventListener('DOMContentLoaded', initCharts);
+
+// The post editor, tag input and image picker are Vue islands inside otherwise
+// plain Blade forms.
+mountIslands();
