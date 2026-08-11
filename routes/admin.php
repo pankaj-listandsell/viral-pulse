@@ -6,7 +6,9 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PostController;
+use App\Http\Controllers\Admin\ScheduledPostController;
 use App\Http\Controllers\Admin\TagController;
+use App\Http\Controllers\Admin\TrendingTopicController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -74,6 +76,27 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('{generation}/approve', 'approve')->name('approve');
         Route::post('{generation}/retry', 'retry')->middleware('throttle:ai-generation')->name('retry');
         Route::delete('{generation}', 'destroy')->name('destroy');
+    });
+
+    /*
+     * Trending pipeline. Everything that spends money or changes state is a
+     * POST, and the fetch button is throttled so it cannot be leaned on.
+     */
+    Route::controller(TrendingTopicController::class)->prefix('trending')->name('trending.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::post('fetch', 'fetch')->middleware('throttle:6,1')->name('fetch');
+        Route::post('run', 'runBatch')->middleware('throttle:ai-generation')->name('run');
+        Route::post('{topic}/generate', 'generate')->middleware('throttle:ai-generation')->name('generate');
+        Route::post('{topic}/ignore', 'ignore')->name('ignore');
+        Route::post('{topic}/restore', 'restore')->name('restore');
+        Route::delete('{topic}', 'destroy')->name('destroy');
+    });
+
+    Route::controller(ScheduledPostController::class)->prefix('scheduled')->name('scheduled.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('{scheduled}/publish', 'publishNow')->name('publish');
+        Route::post('{scheduled}/cancel', 'cancel')->name('cancel');
     });
 
     Route::controller(UserController::class)->prefix('users')->name('users.')->group(function () {

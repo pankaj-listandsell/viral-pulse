@@ -13,6 +13,7 @@ use App\Services\AI\Exceptions\AiGenerationException;
 use App\Services\HtmlSanitizer;
 use App\Services\PostService;
 use App\Services\SlugService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -184,6 +185,38 @@ class AiContentService
                 'issues' => $quality['issues'] ?? [],
             ]);
         }
+
+        return $post;
+    }
+
+    /**
+     * Puts a generated draft into the publishing queue for a given time.
+     *
+     * Same gate as an immediate publish: the auto-publish switch must be on and
+     * the article must have cleared the quality floor. Anything else stays a
+     * draft, because a scheduled post is still an unreviewed post going live.
+     */
+    public function schedulePublication(AiGeneration $generation, Post $post, Carbon $at): Post
+    {
+        $quality = ($generation->parsed_output ?? [])['quality'] ?? [];
+
+        if (! (bool) config('site.content.auto_publish', false) || ! ($quality['publishable'] ?? false)) {
+            Log::info('Generated post held as a draft instead of being scheduled', [
+                'generation' => $generation->id,
+                'post' => $post->id,
+                'issues' => $quality['issues'] ?? [],
+            ]);
+
+            return $post;
+        }
+
+        $post = $this->posts->schedule($post, $at);
+
+        $this->logger->log(
+            'ai.post_scheduled',
+            $post,
+            "Scheduled \"{$post->title}\" for {$at->toDayDateTimeString()} (quality {$generation->quality_score})"
+        );
 
         return $post;
     }

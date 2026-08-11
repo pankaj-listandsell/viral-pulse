@@ -326,21 +326,22 @@ With: relationships, casts, `$fillable` (never `$guarded = []`), and scopes such
 
 ---
 
-### PHASE 9 — Newsletter, comments, contact, settings
+### PHASE 9 — Contact, settings, activity log
 
-- Newsletter: double opt-in, signed unsubscribe links, duplicate handling, admin list with filters, streamed CSV export, rate-limited endpoint
-- Comments: threaded, `pending` by default, moderation queue with bulk approve/reject/spam, honeypot + rate limit + minimum time-on-page, plain-text-only storage, escaped on render, disable-able via settings
+**Dropped from this phase on your instruction: newsletter admin and the whole comments feature.**
+The public newsletter subscribe → confirm → unsubscribe flow already shipped in Phase 5 and keeps working; what is dropped is the admin list/export screen, so subscribers are only readable in the database for now. Comments are dropped entirely — the tables exist from Phase 2 but nothing will read or write them, and no comment form appears on the site. That also removes the unmoderated-UGC risk from the AdSense review.
+
 - Contact: Form Request, spam guards, admin inbox, mail notification
-- Settings UI: grouped tabs (General, SEO, Social, AdSense, Analytics, Newsletter, Comments, AI, Advanced), logo/favicon/OG-image upload, cache flushed on save
+- Settings UI: grouped tabs (General, SEO, Social, AdSense, Analytics, AI, Advanced), logo/favicon/OG-image upload, cache flushed on save
 - Activity log viewer with filters
 
-**Exit gate:** subscribe → confirm → unsubscribe works; comment moderation states all tested; rate limits verified by test.
+**Exit gate:** contact form → inbox works; every settings tab saves and flushes cache; rate limits verified by test.
 
 ---
 
 ### PHASE 10 — Testing, performance, security, deployment
 
-- Complete the suite: admin auth, post/category/tag CRUD, publishing + scheduling, AI generation (faked), search, newsletter, comments, authorization matrix (guest/user/author/editor/admin against every route)
+- Complete the suite: admin auth, post/category/tag CRUD, publishing + scheduling, AI generation (faked), search, trending pipeline, admin-vs-guest authorization matrix against every route
 - Performance: `Model::preventLazyLoading()` in non-prod, slow-query log review, index verification with `EXPLAIN`, cache warming for trending/popular/categories, `optimize` in deploy
 - Security pass: CSRF on all forms, rate limiters on login/comment/newsletter/contact/search/api, mass-assignment audit, upload hardening review, `APP_DEBUG=false` verification, security headers, no secret ever reaching the client bundle
 - Deliver: `README.md` rewrite, `DEPLOYMENT.md`, `.env.example` finalised, all 20 final deliverables from brief §34
@@ -479,8 +480,9 @@ Queue: supervisor on Linux; NSSM or Task Scheduler if hosting on Windows.
 | 4 — Posts / categories / tags / media / users | ✅ Done — 94 tests green |
 | 5 — Public website + SEO head | ✅ Done — 128 tests green |
 | 6 — AI generation | ✅ Done — Gemini + OpenAI, quality gate, 149 tests green |
-| 7 — Trending + scheduler + auto-publish | Next |
-| 8–10 | Planned above |
+| 7 — Trending + scheduler + auto-publish | ✅ Done — feeds → scored topics → drip-published articles, 193 tests green |
+| 8 — SEO infrastructure | Next |
+| 9–10 | Planned above |
 
 **Admin URL:** `/admin/login`. The public site does not link to it and there is no `/login` or `/register`.
 

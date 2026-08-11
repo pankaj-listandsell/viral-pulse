@@ -3,14 +3,19 @@
 namespace App\Jobs;
 
 use App\Enums\AiGenerationStatus;
+use App\Enums\PostStatus;
+use App\Enums\TrendingTopicStatus;
 use App\Models\AiGeneration;
 use App\Models\Category;
+use App\Models\Post;
+use App\Models\TrendingTopic;
 use App\Models\User;
 use App\Services\AI\AiContentService;
 use App\Services\AI\Exceptions\AiGenerationException;
 use App\Services\AI\GenerationRequest;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -31,6 +36,9 @@ class GenerateAiContentJob implements ShouldQueue
 
     /**
      * @param  array<string, mixed>  $requestData
+     * @param  string|null  $publishAt  ISO time this article should go live; null
+     *                                  publishes immediately or leaves a draft,
+     *                                  depending on the auto-publish setting
      */
     public function __construct(
         public readonly int $generationId,
@@ -38,6 +46,7 @@ class GenerateAiContentJob implements ShouldQueue
         public readonly ?int $userId = null,
         public readonly ?int $categoryId = null,
         public readonly bool $createPost = true,
+        public readonly ?string $publishAt = null,
     ) {}
 
     /**
@@ -88,6 +97,8 @@ class GenerateAiContentJob implements ShouldQueue
         }
 
         if (! $this->createPost) {
+            $this->releaseTopic($request, TrendingTopicStatus::Generated);
+
             return;
         }
 
@@ -100,10 +111,27 @@ class GenerateAiContentJob implements ShouldQueue
                 'reason' => $author ? 'no category available' : 'no author available',
             ]);
 
+            $this->releaseTopic($request, TrendingTopicStatus::Failed);
+
             return;
         }
 
-        $service->createPost($generation->refresh(), $author, $categoryId, allowAutoPublish: true);
+        $generation = $generation->refresh();
+
+        // A drip-published article is created as a draft and then scheduled, so
+        // the quality gate is applied once, in one place, either way.
+        $post = $service->createPost(
+            $generation,
+            $author,
+            $categoryId,
+            allowAutoPublish: $this->publishAt === null,
+        );
+
+        if ($this->publishAt) {
+            $service->schedulePublication($generation, $post, Carbon::parse($this->publishAt));
+        }
+
+        $this->linkTopic($request, $post);
     }
 
     public function failed(?Throwable $exception): void
@@ -115,6 +143,12 @@ class GenerateAiContentJob implements ShouldQueue
                 'error_message' => $exception?->getMessage() ?? 'The job failed without an error message.',
             ]);
 
+        // Back to "failed" rather than left "generating", so the next automated
+        // run can pick the topic up again instead of it being stuck forever.
+        if ($topicId = $this->requestData['trending_topic_id'] ?? null) {
+            TrendingTopic::whereKey($topicId)->update(['status' => TrendingTopicStatus::Failed]);
+        }
+
         Log::error('AI content generation failed', [
             'generation' => $this->generationId,
             'error' => $exception?->getMessage(),
@@ -125,5 +159,26 @@ class GenerateAiContentJob implements ShouldQueue
     {
         return $request->category?->id
             ?? Category::active()->ordered()->value('id');
+    }
+
+    private function releaseTopic(GenerationRequest $request, TrendingTopicStatus $status): void
+    {
+        if ($request->trendingTopicId) {
+            TrendingTopic::whereKey($request->trendingTopicId)->update(['status' => $status]);
+        }
+    }
+
+    private function linkTopic(GenerationRequest $request, Post $post): void
+    {
+        if (! $request->trendingTopicId) {
+            return;
+        }
+
+        TrendingTopic::whereKey($request->trendingTopicId)->update([
+            'post_id' => $post->id,
+            'status' => $post->status === PostStatus::Scheduled
+                ? TrendingTopicStatus::Scheduled
+                : TrendingTopicStatus::Generated,
+        ]);
     }
 }

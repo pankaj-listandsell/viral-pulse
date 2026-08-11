@@ -31,8 +31,6 @@
         [
             'label' => 'Audience',
             'items' => [
-                ['route' => 'admin.comments.index', 'label' => 'Comments', 'icon' => 'message-square'],
-                ['route' => 'admin.newsletter.index', 'label' => 'Newsletter', 'icon' => 'mail'],
                 ['route' => 'admin.messages.index', 'label' => 'Contact Messages', 'icon' => 'inbox'],
             ],
         ],
