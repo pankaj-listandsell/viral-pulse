@@ -477,7 +477,10 @@ Queue: supervisor on Linux; NSSM or Task Scheduler if hosting on Windows.
 | 2 — Database foundation | ✅ Done — 22 migrations, 17 models, 10 enums, seeders |
 | 3 — Auth + admin foundation | ✅ Done — 47 tests green |
 | 4 — Posts / categories / tags / media / users | ✅ Done — 94 tests green |
-| 5 — Public website | Next |
-| 6–10 | Planned above |
+| 5 — Public website + SEO head | ✅ Done — 128 tests green |
+| 6 — AI generation | Next |
+| 7–10 | Planned above |
+
+**Admin URL:** `/admin/login`. The public site does not link to it and there is no `/login` or `/register`.
 
 **Admin credentials:** created by `AdminUserSeeder` from `.env`. Set `ADMIN_PASSWORD` before seeding, otherwise a strong password is generated and printed once.
