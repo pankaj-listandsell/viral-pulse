@@ -6,11 +6,10 @@ use App\Enums\PostStatus;
 use App\Models\Category;
 use App\Models\Comment;
 use App\Models\Post;
-use App\Models\Role;
 use App\Models\Tag;
 use App\Models\TrendingTopic;
 use App\Models\User;
-use Database\Seeders\RoleSeeder;
+use Illuminate\Database\Eloquent\MassAssignmentException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -62,8 +61,11 @@ class ModelRelationshipTest extends TestCase
         Category::factory()->count(2)->create(['parent_id' => $parent->id]);
 
         $this->assertCount(2, $parent->children);
-        $this->assertTrue($parent->children->first()->parent->is($parent));
         $this->assertSame(1, Category::roots()->count());
+
+        // Loaded explicitly: strict mode turns any lazy load into an error.
+        $child = Category::with('parent')->whereNotNull('parent_id')->first();
+        $this->assertTrue($child->parent->is($parent));
     }
 
     public function test_comments_thread_through_replies(): void
@@ -89,17 +91,32 @@ class ModelRelationshipTest extends TestCase
         $this->assertNotSame($a, TrendingTopic::hashTopic('IPL Final 2025'));
     }
 
-    public function test_a_user_reports_its_role_correctly(): void
+    public function test_admin_access_depends_on_both_the_admin_flag_and_the_account_being_active(): void
     {
-        $this->seed(RoleSeeder::class);
-
         $admin = User::factory()->admin()->create();
-        $reader = User::factory()->withRole(Role::USER)->create();
+        $suspended = User::factory()->admin()->inactive()->create();
+        $reader = User::factory()->create();
 
-        $this->assertTrue($admin->isAdmin());
         $this->assertTrue($admin->canAccessAdminPanel());
-        $this->assertFalse($reader->isAdmin());
+        $this->assertFalse($suspended->canAccessAdminPanel());
         $this->assertFalse($reader->canAccessAdminPanel());
+    }
+
+    public function test_the_admin_flag_is_not_mass_assignable(): void
+    {
+        $this->assertNotContains('is_admin', (new User)->getFillable());
+
+        // Strict mode escalates a discarded attribute into an exception, so an
+        // attempt to smuggle is_admin through a payload fails loudly here and
+        // is silently dropped in production.
+        $this->expectException(MassAssignmentException::class);
+
+        User::create([
+            'name' => 'Sneaky',
+            'email' => 'sneaky@example.test',
+            'password' => 'password',
+            'is_admin' => true,
+        ]);
     }
 
     public function test_soft_deleted_posts_disappear_from_normal_queries(): void

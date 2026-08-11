@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -32,6 +31,12 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            // Set explicitly rather than left absent: strict mode makes
+            // reading an unloaded attribute an error, and views do read these.
+            'avatar' => null,
+            'bio' => null,
+            'last_login_at' => null,
+            'is_admin' => false,
             'is_active' => true,
         ];
     }
@@ -46,27 +51,9 @@ class UserFactory extends Factory
         ]);
     }
 
-    public function withRole(string $slug): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'role_id' => Role::where('slug', $slug)->value('id')
-                ?? Role::factory()->create(['name' => ucfirst($slug), 'slug' => $slug])->id,
-        ]);
-    }
-
     public function admin(): static
     {
-        return $this->withRole(Role::ADMIN);
-    }
-
-    public function editor(): static
-    {
-        return $this->withRole(Role::EDITOR);
-    }
-
-    public function author(): static
-    {
-        return $this->withRole(Role::AUTHOR);
+        return $this->state(fn (array $attributes) => ['is_admin' => true]);
     }
 
     public function inactive(): static

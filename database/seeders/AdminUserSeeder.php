@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -25,16 +24,13 @@ class AdminUserSeeder extends Seeder
             $generated = true;
         }
 
-        $admin = User::withTrashed()->firstWhere('email', $email);
-
-        if ($admin) {
+        if (User::withTrashed()->where('email', $email)->exists()) {
             $this->command?->warn("Admin user {$email} already exists - left unchanged.");
 
             return;
         }
 
-        User::create([
-            'role_id' => Role::where('slug', Role::ADMIN)->value('id'),
+        $admin = User::create([
             'name' => config('site.admin.name'),
             'username' => 'admin',
             'email' => $email,
@@ -42,6 +38,9 @@ class AdminUserSeeder extends Seeder
             'email_verified_at' => now(),
             'is_active' => true,
         ]);
+
+        // is_admin is guarded, so it is set explicitly rather than mass assigned.
+        $admin->forceFill(['is_admin' => true])->save();
 
         $this->command?->info("Admin user created: {$email}");
 

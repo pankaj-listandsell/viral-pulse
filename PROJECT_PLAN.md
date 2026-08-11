@@ -6,35 +6,42 @@
 
 ---
 
-## A. Decisions Required Before Phase 2 Starts
+## A. Decisions — SETTLED
 
-Four choices materially change the work. My recommendation is marked ✅ — confirm or override.
+All four are decided and implemented. Where a decision changed during the build, the reason is recorded.
 
-### D1 — Auth scaffolding
-| Option | Pros | Cons |
-|---|---|---|
-| ✅ **Laravel Breeze (`breeze:install vue`)** | Gives login, register, password reset, email verification, profile page, Inertia+Vue+Ziggy wiring and a working test suite in one command | Overwrites `app.js`, `vite.config.js`, `app.css`, `routes/web.php`, `tests/` — safe now, since all are stock |
-| Manual Inertia install | Total control, zero opinionated files | ~1 extra day building auth controllers/pages that Breeze gives free |
+### D1 — Frontend architecture ✅ **Blade pages + Vue islands** *(revised during Phase 3)*
 
-**Recommendation:** Breeze. Exact compatibility with Laravel 12.65 + Tailwind v4 gets verified by composer at install time; if the resolver rejects it, we fall back to manual Inertia and I will say so before proceeding.
+The original plan said Breeze + Inertia + Vue. Two findings changed it:
 
-### D2 — AI provider default
-| Option | Notes |
-|---|---|
-| ✅ **Anthropic** (`claude-sonnet-5`) | Strong structured/JSON output, long context for article generation |
-| OpenAI | Equally supported by the driver interface |
-| Google Gemini | Equally supported |
+1. **Breeze v2.4.2 still installs Tailwind v3.2.1** and its own `tailwind.config.js` + `vite.config.js`. Using it would have downgraded the project's working Tailwind v4 setup and pulled in Sanctum, which a same-origin session app does not need. Verified by inspecting the installed package, not assumed.
+2. **Inertia renders client-side.** For a site whose entire value is SEO, shipping article text that only exists after JavaScript runs is a real risk — and the fix (Inertia SSR) needs a Node process alive 24/7 in production, which is a poor fit for this hosting.
 
-Whichever you pick, **the architecture is provider-agnostic** — `AiProviderInterface` with swappable drivers, chosen by `AI_PROVIDER` in `.env`. Adding a second provider later is one new class. Tell me which key you actually have and I will make that the default; the others still get stub drivers.
+**Shipped architecture:**
+- **Admin panel:** Laravel Blade + Alpine.js. Server-rendered, no SPA.
+- **Public site:** Laravel Blade, server-rendered HTML. Crawlers get the complete article with zero JavaScript.
+- **Vue 3:** mounted as *islands* onto the interactive parts only (search, newsletter, likes, comments, filters). The Vue runtime is lazy-loaded — a page with no island ships **~1 KB** of JS.
+- Inertia was installed, then removed. Ziggy is kept for `route()` inside islands.
 
-### D3 — Content language / timezone
-The content types listed (Devotional, Story, Entertainment) suggest an India-focused site. This affects: `APP_TIMEZONE`, the `language` column default, scheduler firing times, and search tokenisation.
-**Recommendation:** `APP_TIMEZONE=Asia/Kolkata`, default content language `en` with `hi` supported. Confirm.
+### D2 — Roles ✅ **No role system. One administrator.** *(revised during Phase 3)*
 
-### D4 — Publishing policy
-**Recommendation (and the default I will build):** `AUTO_PUBLISH=false`. AI produces a **draft**; a human reviews and publishes.
+The original schema had a `roles` table with admin/editor/author/user and six policy classes. That was cut on request: the site has **one admin**, everyone else is a registered reader.
 
-This is not caution for its own sake — Google's spam policies target *scaled content abuse* (mass auto-generated pages made primarily for ad revenue). Auto-publishing unreviewed AI articles puts AdSense approval and search rankings at genuine risk. The `AUTO_PUBLISH=true` path will still be built and will work, with a quality gate in front of it (§Phase 7), but false is the shipped default.
+- `roles` table and `role_id` removed; replaced with `users.is_admin` (boolean, **not mass assignable**).
+- All six policy classes deleted. Authorization is one question — *is this an active admin?* — answered by the `admin` middleware and a single `access-admin` gate.
+- Result: materially less code, and no ambiguity about who can do what.
+
+### D3 — AI provider ✅ **Anthropic** (`claude-sonnet-5`) as the default
+
+The architecture is provider-agnostic: `AiProviderInterface` with swappable drivers selected by `AI_PROVIDER`. OpenAI and Gemini drivers ship as alternatives. Switching later is a one-line `.env` change.
+
+### D4 — Locale ✅ `APP_TIMEZONE=Asia/Kolkata`, default content language `en`, `hi` supported
+
+### D5 — Publishing policy ✅ `AUTO_PUBLISH=false` by default
+
+AI produces a **draft**; a human approves it. The `AUTO_PUBLISH=true` path is built and works, gated behind `ContentValidator`.
+
+This matters commercially, not just editorially: Google's spam policies target *scaled content abuse* — mass auto-generated pages made primarily for ad revenue. Since the goal here is AdSense income, an unreviewed firehose is the single fastest way to lose both approval and rankings. The mitigation built into the design is to make review **fast** rather than optional: the AI produces a complete, SEO-ready draft, and approving it is one click. Volume comes from generation throughput, not from skipping the human.
 
 ---
 
@@ -42,16 +49,26 @@ This is not caution for its own sake — Google's spam policies target *scaled c
 
 ```
 Request
-  ├── Public  → routes/web.php   → Http/Controllers/Public/*  → Services → Models → Inertia (Vue Public pages)
-  ├── Admin   → routes/admin.php → Http/Controllers/Admin/*   → Services → Models → Inertia (Vue Admin pages)
-  │              guarded by: auth → verified → EnsureUserIsAdmin
-  ├── API     → routes/api.php   → Http/Controllers/Api/*     → throttled, JSON only
+  ├── Public  → routes/web.php   → Http/Controllers/Public/* → Services → Models
+  │                              → Blade (server-rendered HTML)
+  │                              → Vue islands hydrate interactive parts only
+  ├── Admin   → routes/admin.php → Http/Controllers/Admin/*  → Services → Models
+  │                              → Blade + Alpine.js
+  │              guarded by: auth → EnsureUserIsAdmin
+  ├── API     → routes/api.php   → Http/Controllers/Api/*    → throttled, JSON only
   └── Console → routes/console.php → Console/Commands/* → dispatch Jobs → Services
 
 Services layer (all business logic; controllers stay thin)
 Jobs layer     (anything slow, external, or failure-prone)
 Cache layer    (public read paths only; admin reads are always live)
 ```
+
+**Asset entry points**
+| Entry | Loads | Used by |
+|---|---|---|
+| `resources/js/app.js` | Island mounter (~1 KB). Vue + the island component are fetched only if the page contains one. | Public site |
+| `resources/js/admin.js` | Alpine.js, Chart.js, axios | Admin panel + auth pages |
+| `resources/css/app.css` | Tailwind v4 (CSS-first config, no `tailwind.config.js`) | Both |
 
 **Rules enforced throughout**
 - Controllers: request in → service call → response out. No queries, no business logic.
@@ -68,12 +85,11 @@ Cache layer    (public read paths only; admin reads are always live)
 
 ### Core
 
-**`roles`** — `id`, `name` (unique), `slug` (unique), `description` (nullable), timestamps
-Seeded: `admin`, `editor`, `author`, `user`.
+**`users`** *(extended by `add_profile_fields_to_users_table`)*
+`is_admin` (bool, default false, **not mass assignable**), `username` (unique, nullable), `avatar` (nullable), `bio` (text nullable), `is_active` (bool, default true), `last_login_at` (nullable), `softDeletes`
+Indexes: `is_admin`, `is_active`
 
-**`users`** *(modify existing migration via a new `add_profile_fields_to_users_table`)*
-`role_id` FK→roles (restrict, default = user role), `username` (unique, nullable), `avatar` (nullable), `bio` (text nullable), `is_active` (bool, default true), `last_login_at` (nullable), `softDeletes`
-Indexes: `role_id`, `is_active`
+There is no `roles` table — see decision D2.
 
 **`categories`** — `id`, `parent_id` (self FK, nullOnDelete, nullable), `name`, `slug` (unique), `description` (text nullable), `image` (nullable), `icon` (nullable), `color` (char 7 nullable), `sort_order` (uint, default 0), `is_active` (bool, default true), `is_featured` (bool, default false), `posts_count` (uint, default 0), `seo_title`, `seo_description`, timestamps, softDeletes
 Indexes: `(is_active, sort_order)`, `parent_id`, unique `slug`
@@ -207,19 +223,20 @@ With: relationships, casts, `$fillable` (never `$guarded = []`), and scopes such
 
 ---
 
-### PHASE 3 — Auth, roles, admin foundation
+### PHASE 3 — Auth + admin foundation ✅ DONE
 
-- Install Inertia + Vue + Ziggy (per D1); verify `npm run build` before touching anything else
-- `EnsureUserIsAdmin` middleware, aliased in `bootstrap/app.php`
-- Register `routes/admin.php` (prefix `admin`, name `admin.`) and `routes/api.php`
-- `Gate`/Policy foundation: `PostPolicy`, `CategoryPolicy`, `CommentPolicy`, `MediaPolicy`, `UserPolicy`
-- `HandleInertiaRequests` shared data: auth user + role, flash messages, public settings, Ziggy routes
-- **Admin shell:** `AdminLayout.vue` — collapsible sidebar (16 items per brief), topbar, breadcrumbs, mobile drawer, dark mode
-- Reusable admin components: `DataTable`, `Pagination`, `SearchInput`, `FilterDropdown`, `StatusBadge`, `ConfirmModal`, `Toast`, `EmptyState`, `LoadingSpinner`, `FormInput/Select/Textarea/Toggle/FileUpload`, `StatCard`, `ChartCard`
-- Dashboard with the 8 stat cards wired to real counts; charts stubbed until Phase 7 data exists
-- `LogsActivity` trait → `activity_logs`
+- Vue + Alpine + Ziggy installed, Tailwind v4 preserved; Inertia installed then removed (D1)
+- `EnsureUserIsAdmin` middleware aliased in `bootstrap/app.php`; `routes/admin.php` and `routes/api.php` registered
+- Single `access-admin` gate, `Gate::before` short-circuit for the admin (D2)
+- Auth: login, logout, register, forgot/reset password — all Blade, throttled, with an account-enumeration-safe reset response
+- Profile: details, password change, account deletion (readers only)
+- **Admin shell:** collapsible sidebar (16 items, hidden until their route exists), topbar with theme toggle and user menu, toast queue, mobile drawer, dark mode with no flash-of-light
+- Blade components: `icon` (43 lucide paths generated from the installed package), `input`, `label`, `error`, `button`, `card`, `badge`, `checkbox`, `stat-card`, `empty-state`, `chart`, `toasts`
+- Dashboard: 8 stat cards on real counts, two Chart.js charts, top categories, top posts, recent-posts table, moderation banner
+- `ActivityLogger` service writing to `activity_logs`; `Fingerprint` helper so no raw IP is ever stored
+- Error pages 403/404/419/429/500/503
 
-**Exit gate:** login as seeded admin → dashboard renders; non-admin gets 403; `php artisan test` green.
+**Exit gate:** ✅ 47 tests green, Pint clean, `npm run build` clean.
 
 ---
 
@@ -228,8 +245,8 @@ With: relationships, casts, `$fillable` (never `$guarded = []`), and scopes such
 - Controllers: `Admin\PostController` (+ `duplicate`, `publish`, `unpublish`, `archive`, `schedule`, `bulkAction`), `Admin\CategoryController`, `Admin\TagController`, `Admin\MediaController`
 - Form Requests: `StorePostRequest`, `UpdatePostRequest`, `StoreCategoryRequest`, `UpdateCategoryRequest`, `StoreTagRequest`, `UpdateTagRequest`, `UploadMediaRequest`
 - Services: `PostService` (slug uniqueness, reading time, status transitions, tag sync, counter upkeep), `MediaService` (validate → store → GD resize → WebP → thumbnails → `media` row), `SlugService`, `HtmlSanitizer`
-- Vue admin pages: `Posts/{Index,Create,Edit}`, `Categories/*`, `Tags/*`, `Media/Index`
-- Editor components: `TiptapEditor`, `SlugInput` (auto from title, manual override, live availability check), `TagSelector`, `MediaPicker` modal, `SeoPanel` with Google/social preview, `PublishBox` (status + schedule datetime)
+- Blade admin views: `posts/{index,create,edit}`, `categories/*`, `tags/*`, `media/index`
+- Editor pieces: Tiptap mounted as an island inside the Blade form, `SlugInput` (auto from title, manual override, live availability check), tag selector, media picker modal, SEO panel with Google/social preview, publish box (status + schedule datetime)
 - Upload validation: MIME **sniffed from content**, not the extension; size cap; extension allowlist; randomised filenames; images re-encoded through GD so no payload survives
 
 **Exit gate:** feature tests for full CRUD + authorization + upload rejection cases, all green.
@@ -239,11 +256,12 @@ With: relationships, casts, `$fillable` (never `$guarded = []`), and scopes such
 ### PHASE 5 — Public frontend + inline SEO
 
 - `Public\{Home,Post,Category,Tag,Search,Page,Contact}Controller`
-- `PublicLayout.vue`: `SiteHeader` (nav from active categories, search, mobile menu), `SiteFooter`, `NewsletterForm`, `ScrollToTop`
-- Pages: Home, Trending, Latest, Categories, Category detail, Post detail, Tag, Search, About, Contact, Privacy, Terms, Disclaimer
+- `layouts/public.blade.php`: header (nav from active categories, search, mobile menu), footer, newsletter, scroll-to-top
+- Pages (all server-rendered Blade): Home, Trending, Latest, Categories, Category detail, Post detail, Tag, Search, About, Contact, Privacy, Terms, Disclaimer
 - Home sections: hero/trending, latest grid, trending rail, popular categories, featured, newsletter
 - Post page: title, hero image, **real author**, date, reading time, category, sanitised body (`prose`), tags, share buttons, related posts, popular posts, newsletter CTA, AI-disclosure badge where `ai_generated`
-- `SeoService` + `<SeoHead>` component: title, description, canonical, OG, Twitter card, JSON-LD (Article, Breadcrumb, Organization, WebSite)
+- **Vue islands** on this phase: `SearchBox`, `NewsletterForm`, `LikeButton`, `CommentThread`, `ShareBar`, `CategoryFilter`. Article text is never inside an island.
+- `SeoService` + `<x-seo.head>` component: title, description, canonical, OG, Twitter card, JSON-LD (Article, Breadcrumb, Organization, WebSite)
 - Ad slot components `AdBanner / AdInArticle / AdSidebar / AdFooter` — **render nothing** unless `ADSENSE_ENABLED` and a slot ID is set. No placeholder boxes, no fake ads.
 - Performance: eager loading everywhere, `loading="lazy"` + `width`/`height` on all images, responsive `srcset` from Phase 4 conversions, cached category nav
 
@@ -263,8 +281,9 @@ With: relationships, casts, `$fillable` (never `$guarded = []`), and scopes such
   - `ContentValidator` — length, required fields, banned patterns, duplicate-title check, quality score
 - Output sanitised through `HtmlSanitizer` before it is ever persisted
 - `GenerateAiContentJob`: `$tries=3`, `$backoff=[30,120,300]`, `$timeout=180`, `failed()` marks the `ai_generations` row failed and notifies the admin
-- Admin `AiGeneratorController` + `AiGenerator/Index.vue`: form (topic, category, language, content type, tone, audience, length) → queued job → live status poll → preview → "Create draft" → opens the post editor prefilled
-- `AiGenerations/Index.vue`: history, tokens, cost, status, retry
+- Admin `AiGeneratorController`: form (topic, category, language, content type, tone, audience, length) → queued job → live status poll → preview → **one-click approve** → published or scheduled without leaving the page
+- Generation history view: tokens, cost, status, retry
+- Bulk review queue, so a batch of overnight drafts can be approved in one pass rather than one at a time — this is what keeps `AUTO_PUBLISH=false` practical at volume
 - **API keys only from `.env`.** Never in code, never sent to the frontend, never logged.
 
 *(When implementing this phase I will load the `claude-api` skill first so model IDs, structured-output syntax and pricing come from current reference rather than memory.)*
@@ -334,19 +353,22 @@ With: relationships, casts, `$fillable` (never `$guarded = []`), and scopes such
 
 | Layer | Count | Location |
 |---|---|---|
-| Migrations | 24 | `database/migrations/` |
-| Models | 18 | `app/Models/` |
-| Controllers | ~28 | `app/Http/Controllers/{Admin,Public,Api,Auth}/` |
-| Form Requests | ~18 | `app/Http/Requests/{Admin,Public}/` |
-| Policies | 6 | `app/Policies/` |
+| Migrations | 22 | `database/migrations/` |
+| Enums | 10 | `app/Enums/` |
+| Models | 17 | `app/Models/` |
+| Controllers | ~26 | `app/Http/Controllers/{Admin,Public,Api,Auth}/` |
+| Form Requests | ~18 | `app/Http/Requests/` |
 | Services | 12 | `app/Services/`, `app/Services/AI/`, `app/Services/Trending/` |
 | Jobs | 6 | `app/Jobs/` |
 | Console commands | 6 | `app/Console/Commands/` |
-| Middleware | 3 | `app/Http/Middleware/` |
-| Vue pages | ~35 | `resources/js/Pages/{Admin,Public,Auth}/` |
-| Vue components | ~55 | `resources/js/Components/{UI,Admin,Public,Editor,Charts}/` |
-| Layouts | 3 | `resources/js/Layouts/` |
+| Middleware | 1 | `app/Http/Middleware/` |
+| Blade views | ~45 | `resources/views/{admin,public,auth,profile,errors}/` |
+| Blade components | ~20 | `resources/views/components/` |
+| Layouts | 4 | `resources/views/layouts/`, `resources/views/errors/layout.blade.php` |
+| Vue islands | ~8 | `resources/js/Islands/` |
 | Tests | ~30 | `tests/{Feature,Unit}/` |
+
+No `app/Policies/` — see decision D2.
 
 ---
 
@@ -447,6 +469,14 @@ Queue: supervisor on Linux; NSSM or Task Scheduler if hosting on Windows.
 
 ---
 
-## I. Next Step
+## I. Progress
 
-Answer **D1–D4** in §A (or just say "go with your recommendations") and I will start **Phase 2**, beginning with the `phpunit.xml` fix that currently puts your live database at risk.
+| Phase | Status |
+|---|---|
+| 1 — Audit | ✅ Done |
+| 2 — Database foundation | ✅ Done — 22 migrations, 17 models, 10 enums, seeders |
+| 3 — Auth + admin foundation | ✅ Done — 47 tests green |
+| 4 — Posts / categories / tags / media | Next |
+| 5–10 | Planned above |
+
+**Admin credentials:** created by `AdminUserSeeder` from `.env`. Set `ADMIN_PASSWORD` before seeding, otherwise a strong password is generated and printed once.

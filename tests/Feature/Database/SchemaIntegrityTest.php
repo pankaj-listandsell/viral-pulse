@@ -31,7 +31,7 @@ class SchemaIntegrityTest extends TestCase
     public function test_every_expected_table_exists(): void
     {
         $tables = [
-            'roles', 'users', 'categories', 'tags', 'media', 'posts', 'post_tag',
+            'users', 'categories', 'tags', 'media', 'posts', 'post_tag',
             'trending_topics', 'ai_generations', 'scheduled_posts', 'post_views',
             'post_daily_stats', 'post_likes', 'comments', 'settings', 'seo_meta',
             'contact_messages', 'newsletter_subscribers', 'activity_logs',

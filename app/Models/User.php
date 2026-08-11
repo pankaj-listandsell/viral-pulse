@@ -6,7 +6,6 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -20,10 +19,12 @@ class User extends Authenticatable
     /**
      * The attributes that are mass assignable.
      *
+     * `is_admin` is deliberately absent: admin rights are granted explicitly,
+     * never through a request payload.
+     *
      * @var list<string>
      */
     protected $fillable = [
-        'role_id',
         'name',
         'username',
         'email',
@@ -53,14 +54,10 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
             'is_active' => 'boolean',
             'last_login_at' => 'datetime',
         ];
-    }
-
-    public function role(): BelongsTo
-    {
-        return $this->belongsTo(Role::class);
     }
 
     public function posts(): HasMany
@@ -88,27 +85,26 @@ class User extends Authenticatable
         return $this->hasMany(ActivityLog::class);
     }
 
-    public function hasRole(string $slug): bool
-    {
-        return $this->role?->slug === $slug;
-    }
-
     public function isAdmin(): bool
     {
-        return $this->hasRole(Role::ADMIN);
+        return $this->is_admin === true;
     }
 
     /**
-     * Roles allowed into the admin panel. Authors reach it too, but policies
-     * narrow what they may actually touch once inside.
+     * A deactivated account keeps no access, whatever its admin flag says.
      */
     public function canAccessAdminPanel(): bool
     {
-        return in_array($this->role?->slug, [Role::ADMIN, Role::EDITOR, Role::AUTHOR], true);
+        return $this->is_admin && $this->is_active;
     }
 
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
+    }
+
+    public function scopeAdmins(Builder $query): Builder
+    {
+        return $query->where('is_admin', true);
     }
 }
