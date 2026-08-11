@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Services\MediaResolver;
 use App\Services\SettingsService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +19,10 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // Both hold a per-request memo, so they must be the same instance for
+        // every caller within a request.
+        $this->app->scoped(SettingsService::class);
+        $this->app->scoped(MediaResolver::class);
     }
 
     public function boot(): void

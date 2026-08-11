@@ -14,6 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function () {
+            // Signing in lives under /admin too, so the public site never
+            // exposes a login link or a guessable /login URL.
+            Route::middleware('web')
+                ->prefix('admin')
+                ->group(base_path('routes/auth.php'));
+
             Route::middleware('web')
                 ->prefix('admin')
                 ->name('admin.')

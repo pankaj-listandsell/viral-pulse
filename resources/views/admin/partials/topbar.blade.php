@@ -65,7 +65,7 @@
                 <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ auth()->user()->email }}</p>
             </div>
 
-            <a href="{{ route('profile.edit') }}"
+            <a href="{{ route('admin.profile.edit') }}"
                class="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50
                       dark:text-gray-200 dark:hover:bg-gray-800"
                role="menuitem">

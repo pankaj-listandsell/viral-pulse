@@ -3,13 +3,25 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
-    Route::post('register', [RegisteredUserController::class, 'store'])->middleware('throttle:registrations');
+/*
+|--------------------------------------------------------------------------
+| Authentication routes
+|--------------------------------------------------------------------------
+|
+| Registered under the /admin prefix from bootstrap/app.php, so the sign-in
+| screen lives at /admin/login and is never linked from the public site.
+| There is no public registration: the site has one administrator, and
+| readers do not need an account to read, share or comment.
+|
+| Route names stay unprefixed (login, password.request, ...) because
+| Laravel's Authenticate middleware and password reset notification both
+| resolve them by those names.
+|
+*/
 
+Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 

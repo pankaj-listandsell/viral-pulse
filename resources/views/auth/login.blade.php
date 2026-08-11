@@ -2,7 +2,7 @@
 
 @section('title', 'Sign in')
 @section('heading', 'Sign in')
-@section('subheading', 'Welcome back. Enter your details to continue.')
+@section('subheading', 'Administrator access.')
 
 @section('content')
     <form method="POST" action="{{ route('login') }}" class="space-y-4">
@@ -53,8 +53,7 @@
 @endsection
 
 @section('below')
-    Don't have an account?
-    <a href="{{ route('register') }}" class="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
-        Create one
+    <a href="{{ route('home') }}" class="font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400">
+        Back to the site
     </a>
 @endsection

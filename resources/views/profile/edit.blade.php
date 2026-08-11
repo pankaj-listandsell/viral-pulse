@@ -1,14 +1,14 @@
-@extends(auth()->user()->canAccessAdminPanel() ? 'layouts.admin' : 'layouts.public')
+@extends('layouts.admin')
 
 @section('title', 'Profile')
 @section('heading', 'Profile')
-@section('subheading', 'Manage your account details and password.')
+@section('subheading', 'Your account details and password.')
 
 @section('content')
     <div class="grid max-w-3xl gap-4">
 
-        <x-ui.card title="Account details" subtitle="Your name and email as they appear on the site.">
-            <form method="POST" action="{{ route('profile.update') }}" class="space-y-4">
+        <x-ui.card title="Account details" subtitle="Your name is used as the byline on posts you write.">
+            <form method="POST" action="{{ route('admin.profile.update') }}" class="space-y-4">
                 @csrf
                 @method('PATCH')
 
@@ -30,19 +30,16 @@
                     <x-ui.label for="email" required>Email</x-ui.label>
                     <x-ui.input id="email" name="email" type="email" value="{{ old('email', $user->email) }}"
                                 required :invalid="$errors->has('email')" />
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        This is your sign-in address and where password resets are sent.
+                    </p>
                     <x-ui.error for="email" />
                 </div>
 
                 <div>
                     <x-ui.label for="bio">Bio</x-ui.label>
-                    <textarea
-                        id="bio"
-                        name="bio"
-                        rows="3"
-                        class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-xs
-                               transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/40 focus:outline-none
-                               dark:border-gray-700 dark:bg-gray-900"
-                    >{{ old('bio', $user->bio) }}</textarea>
+                    <x-ui.textarea id="bio" name="bio" rows="3" :invalid="$errors->has('bio')"
+                    >{{ old('bio', $user->bio) }}</x-ui.textarea>
                     <x-ui.error for="bio" />
                 </div>
 
@@ -51,7 +48,7 @@
         </x-ui.card>
 
         <x-ui.card title="Password" subtitle="Use a long, unique password.">
-            <form method="POST" action="{{ route('profile.password') }}" class="space-y-4">
+            <form method="POST" action="{{ route('admin.profile.password') }}" class="space-y-4">
                 @csrf
                 @method('PUT')
 
@@ -79,50 +76,6 @@
                 <x-ui.button type="submit">Update password</x-ui.button>
             </form>
         </x-ui.card>
-
-        @unless($user->canAccessAdminPanel())
-            <x-ui.card title="Delete account" subtitle="This permanently removes your account.">
-                <form
-                    method="POST"
-                    action="{{ route('profile.destroy') }}"
-                    x-data="confirmable('Your account and its data will be removed. This cannot be undone.')"
-                    x-ref="form"
-                    @submit.prevent="open = true"
-                    class="space-y-4"
-                >
-                    @csrf
-                    @method('DELETE')
-
-                    <div>
-                        <x-ui.label for="delete_password" required>Confirm your password</x-ui.label>
-                        <x-ui.input id="delete_password" name="password" type="password"
-                                    autocomplete="current-password" required
-                                    :invalid="$errors->has('password')" />
-                        <x-ui.error for="password" />
-                    </div>
-
-                    <x-ui.button type="submit" variant="danger">Delete account</x-ui.button>
-
-                    <div
-                        x-show="open"
-                        x-transition.opacity
-                        class="fixed inset-0 z-50 grid place-items-center bg-gray-900/50 p-4 backdrop-blur-xs"
-                        x-cloak
-                    >
-                        <div class="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-5 shadow-xl
-                                    dark:border-gray-800 dark:bg-gray-900"
-                             @click.outside="open = false">
-                            <h3 class="text-sm font-semibold">Are you sure?</h3>
-                            <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400" x-text="message"></p>
-                            <div class="mt-5 flex justify-end gap-2">
-                                <x-ui.button variant="secondary" size="sm" @click="open = false">Cancel</x-ui.button>
-                                <x-ui.button variant="danger" size="sm" @click="confirm()">Delete</x-ui.button>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </x-ui.card>
-        @endunless
 
     </div>
 @endsection

@@ -20,7 +20,7 @@
 @endsection
 
 @section('below')
-    <a href="{{ route('login') }}" class="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
+    <a href="{{ route('login') }}" class="font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400">
         Back to sign in
     </a>
 @endsection

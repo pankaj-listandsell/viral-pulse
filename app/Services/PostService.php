@@ -19,6 +19,7 @@ class PostService
         private readonly SlugService $slugs,
         private readonly HtmlSanitizer $sanitizer,
         private readonly ActivityLogger $logger,
+        private readonly ContentFeedService $feed,
     ) {}
 
     /**
@@ -291,6 +292,10 @@ class PostService
      */
     private function refreshCounters(Post $post, ?int $previousCategoryId = null): void
     {
+        // A newly published post must appear on the home page immediately, not
+        // after the feed cache happens to expire.
+        $this->feed->flush();
+
         $this->refreshCategoryCount($post->category_id);
 
         if ($previousCategoryId && $previousCategoryId !== $post->category_id) {

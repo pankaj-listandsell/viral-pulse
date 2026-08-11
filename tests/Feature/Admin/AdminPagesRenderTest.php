@@ -51,7 +51,7 @@ class AdminPagesRenderTest extends TestCase
             'tags index' => route('admin.tags.index'),
             'media index' => route('admin.media.index'),
             'users index' => route('admin.users.index'),
-            'profile' => route('profile.edit'),
+            'profile' => route('admin.profile.edit'),
         ];
 
         foreach ($pages as $label => $url) {

@@ -63,10 +63,23 @@ class AdminAccessTest extends TestCase
         $this->assertFalse($suspended->can('access-admin'));
     }
 
-    public function test_a_reader_may_still_reach_their_own_profile(): void
+    public function test_the_profile_page_is_admin_only(): void
     {
         $this->actingAs(User::factory()->create())
-            ->get(route('profile.edit'))
+            ->get(route('admin.profile.edit'))
+            ->assertForbidden();
+
+        $this->actingAs(User::factory()->admin()->create())
+            ->get(route('admin.profile.edit'))
             ->assertOk();
+    }
+
+    public function test_signing_in_lives_under_admin_and_not_at_the_site_root(): void
+    {
+        $this->get('/admin/login')->assertOk();
+
+        // A bare /login must not exist: the public site never exposes one.
+        $this->get('/login')->assertNotFound();
+        $this->get('/register')->assertNotFound();
     }
 }

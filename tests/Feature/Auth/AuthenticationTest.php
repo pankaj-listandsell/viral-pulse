@@ -106,33 +106,18 @@ class AuthenticationTest extends TestCase
         $this->assertTrue(ActivityLog::where('action', 'auth.logout')->exists());
     }
 
-    public function test_registration_never_produces_an_admin(): void
+    public function test_there_is_no_public_registration(): void
     {
-        $this->post(route('register'), [
-            'name' => 'Asha Reader',
-            'email' => 'asha@example.test',
-            'password' => 'correct-horse-battery',
-            'password_confirmation' => 'correct-horse-battery',
-        ])->assertRedirect(route('home'));
-
-        $user = User::firstWhere('email', 'asha@example.test');
-
-        $this->assertNotNull($user);
-        $this->assertFalse($user->isAdmin());
-        $this->assertFalse($user->canAccessAdminPanel());
-    }
-
-    public function test_registration_cannot_be_tricked_into_granting_admin(): void
-    {
-        $this->post(route('register'), [
+        // Accounts are created by the seeder or by an administrator, never by
+        // a visitor, so no self-service signup endpoint exists at all.
+        $this->assertFalse(app('router')->has('register'));
+        $this->post('/register', [
             'name' => 'Mallory',
             'email' => 'mallory@example.test',
             'password' => 'correct-horse-battery',
-            'password_confirmation' => 'correct-horse-battery',
-            'is_admin' => 1,
-        ]);
+        ])->assertNotFound();
 
-        $this->assertFalse(User::firstWhere('email', 'mallory@example.test')->isAdmin());
+        $this->assertDatabaseMissing('users', ['email' => 'mallory@example.test']);
     }
 
     public function test_the_forgot_password_response_does_not_reveal_whether_an_account_exists(): void

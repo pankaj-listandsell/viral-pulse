@@ -50,7 +50,7 @@ class SettingSeeder extends Seeder
             ['group' => 'seo', 'key' => 'seo_default_keywords', 'value' => null, 'type' => SettingType::String],
             ['group' => 'seo', 'key' => 'seo_default_og_image', 'value' => null, 'type' => SettingType::File, 'is_public' => true],
             ['group' => 'seo', 'key' => 'seo_twitter_handle', 'value' => null, 'type' => SettingType::String, 'is_public' => true],
-            ['group' => 'seo', 'key' => 'seo_robots_default', 'value' => 'index,follow', 'type' => SettingType::String],
+            ['group' => 'seo', 'key' => 'seo_robots_default', 'value' => 'index, follow', 'type' => SettingType::String],
 
             // Social
             ['group' => 'social', 'key' => 'social_facebook', 'value' => null, 'type' => SettingType::String, 'is_public' => true],

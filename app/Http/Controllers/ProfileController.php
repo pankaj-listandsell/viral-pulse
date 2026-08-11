@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
@@ -41,26 +40,5 @@ class ProfileController extends Controller
         $request->user()->update(['password' => $validated['password']]);
 
         return back()->with('success', 'Password updated.');
-    }
-
-    public function destroy(Request $request): RedirectResponse
-    {
-        $request->validate(['password' => ['required', 'current_password']]);
-
-        $user = $request->user();
-
-        // Staff accounts own content and are referenced by restrictOnDelete
-        // foreign keys, so removing one is an administrator's decision.
-        if ($user->canAccessAdminPanel()) {
-            return back()->with('error', 'Staff accounts must be removed by an administrator.');
-        }
-
-        Auth::logout();
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect()->route('home');
     }
 }
