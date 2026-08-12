@@ -4,6 +4,7 @@ namespace Tests\Feature\Trending;
 
 use App\Enums\TrendingTopicStatus;
 use App\Models\Category;
+use App\Models\Post;
 use App\Models\TrendingTopic;
 use App\Models\User;
 use Database\Seeders\CategorySeeder;
@@ -251,6 +252,27 @@ class TrendingFetchTest extends TestCase
             ->get(route('admin.trending.index'))
             ->assertOk()
             ->assertSee('A topic waiting to be written');
+    }
+
+    public function test_the_trending_page_renders_a_topic_that_already_produced_a_post(): void
+    {
+        // The row for a written-up topic links to its post, and the link is
+        // built from the slug. The eager load originally fetched only id, title
+        // and status, so this row threw a MissingAttributeException while a
+        // page of un-written topics rendered fine.
+        $post = Post::factory()->create(['title' => 'The article that came out of it']);
+
+        TrendingTopic::factory()->create([
+            'topic' => 'A topic that has been written',
+            'status' => TrendingTopicStatus::Generated,
+            'post_id' => $post->id,
+        ]);
+
+        $this->actingAs(User::factory()->admin()->create())
+            ->get(route('admin.trending.index'))
+            ->assertOk()
+            ->assertSee('A topic that has been written')
+            ->assertSee(route('admin.posts.edit', $post->slug));
     }
 
     public function test_guests_cannot_reach_the_trending_screen(): void

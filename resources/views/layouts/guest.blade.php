@@ -8,6 +8,8 @@
 
     <title>@yield('title') · {{ $siteSettings['site_name'] ?? config('app.name') }}</title>
 
+    <x-seo.favicon :siteSettings="$siteSettings" />
+
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet">
 

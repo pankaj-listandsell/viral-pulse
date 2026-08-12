@@ -16,6 +16,8 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             TagSeeder::class,
             SettingSeeder::class,
+            // After SettingSeeder: it fills the rows this one writes into.
+            BrandSeeder::class,
             PostSeeder::class,
         ]);
     }

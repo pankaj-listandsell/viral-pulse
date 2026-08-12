@@ -33,6 +33,8 @@
 <meta name="robots" content="{{ $robots }}">
 <link rel="canonical" href="{{ $canonical }}">
 
+<x-seo.favicon :siteSettings="$settings->public()" />
+
 @if(! empty($seo['feed']))
     {{-- A section feed alongside the site-wide one in the layout. --}}
     <link rel="alternate" type="application/rss+xml" title="{{ $title }} · RSS" href="{{ $seo['feed'] }}">

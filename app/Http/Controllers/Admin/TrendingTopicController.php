@@ -34,7 +34,9 @@ class TrendingTopicController extends Controller
 
         return view('admin.trending.index', [
             'topics' => TrendingTopic::query()
-                ->with(['category:id,name,color', 'post:id,title,status'])
+                // slug is not decoration here: Post::getRouteKeyName() returns
+                // it, so route() throws without it under strict mode.
+                ->with(['category:id,name,color', 'post:id,title,slug,status'])
                 ->when($status !== '', fn ($query) => $query->where('status', $status))
                 ->when($source !== '', fn ($query) => $query->where('source', $source))
                 ->when($search !== '', fn ($query) => $query->where('topic', 'like', '%'.addcslashes($search, '%_').'%'))
