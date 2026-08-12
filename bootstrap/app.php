@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\CanonicalUrl;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -31,6 +32,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+
+        // Applied to every response, including the XML and text endpoints that
+        // are not part of the web group's HTML output.
+        $middleware->append(SecurityHeaders::class);
 
         // Runs before the session starts: a redirect this early costs nothing,
         // and it keeps duplicate URL variants out of the index.

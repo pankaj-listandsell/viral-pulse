@@ -82,11 +82,15 @@ class SettingsWriter
         $this->rss->flush();
     }
 
+    /**
+     * The extension is guessed from the file's contents, never taken from the
+     * name the browser sent - that half of the upload is attacker-controlled.
+     */
     private function storeImage(UploadedFile $file, string $key): string
     {
         return $file->storeAs(
             'settings',
-            $key.'-'.Str::random(8).'.'.($file->getClientOriginalExtension() ?: 'png'),
+            $key.'-'.Str::random(8).'.'.($file->extension() ?: 'png'),
             config('site.media.disk')
         );
     }

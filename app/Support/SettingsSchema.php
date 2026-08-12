@@ -53,7 +53,10 @@ final class SettingsSchema
                     ['key' => 'contact_email', 'label' => 'Contact email', 'input' => 'email', 'rules' => ['nullable', 'email:rfc', 'max:255'], 'help' => 'Where contact form notifications are sent. Falls back to the admin account.'],
                     ['key' => 'posts_per_page', 'label' => 'Posts per page', 'input' => 'number', 'rules' => ['required', 'integer', 'min:3', 'max:48']],
                     ['key' => 'timezone', 'label' => 'Timezone', 'input' => 'timezone', 'rules' => ['required', 'timezone']],
-                    ['key' => 'site_logo', 'label' => 'Logo', 'input' => 'image', 'rules' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:1024']],
+                    // No SVG. It is markup, it can carry script, and opening
+                    // the uploaded file directly would run that script on this
+                    // origin. A PNG cannot do that.
+                    ['key' => 'site_logo', 'label' => 'Logo', 'input' => 'image', 'rules' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:1024']],
                     ['key' => 'site_favicon', 'label' => 'Favicon', 'input' => 'image', 'rules' => ['nullable', 'image', 'mimes:png,ico,webp', 'max:256'], 'help' => 'A square PNG works everywhere. 512×512 is plenty.'],
                 ],
             ],
