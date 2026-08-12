@@ -74,7 +74,15 @@ class SitemapService
             $entries = Category::query()
                 ->where('is_active', true)
                 // A category with nothing in it is a soft 404 to a crawler.
-                ->where('posts_count', '>', 0)
+                //
+                // Checked against the posts themselves rather than the cached
+                // posts_count column. That counter is denormalised, and a
+                // seeder or an import that writes posts directly leaves it at
+                // zero - which silently drops a real category out of the
+                // sitemap, where nobody would notice for months.
+                ->whereHas('posts', fn ($query) => $query->where('status', PostStatus::Published)
+                    ->whereNotNull('published_at')
+                    ->where('published_at', '<=', now()))
                 ->orderBy('id')
                 ->get(['slug', 'updated_at'])
                 ->map(fn (Category $category) => [
@@ -93,7 +101,9 @@ class SitemapService
     {
         return Cache::remember('sitemap.tags', now()->addMinutes(self::TTL_MINUTES), function (): string {
             $entries = Tag::query()
-                ->where('posts_count', '>', 0)
+                ->whereHas('posts', fn ($query) => $query->where('status', PostStatus::Published)
+                    ->whereNotNull('published_at')
+                    ->where('published_at', '<=', now()))
                 ->orderBy('id')
                 ->limit(self::CHUNK)
                 ->get(['slug', 'updated_at'])

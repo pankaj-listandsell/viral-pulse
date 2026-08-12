@@ -5,7 +5,15 @@
     $siteName = $settings->get('site_name') ?: config('app.name');
 
     $title = $seo['title'] ?? null;
-    $fullTitle = $title ? "{$title} · {$siteName}" : $siteName;
+
+    // The site name is dropped once the headline is long enough to fill the
+    // result on its own. Appending it there only pushes the part that matters
+    // past where Google truncates.
+    $fullTitle = match (true) {
+        ! $title => $siteName,
+        mb_strlen($title) > 55 => $title,
+        default => "{$title} · {$siteName}",
+    };
     $description = $seo['description'] ?? $settings->get('seo_default_description');
     $canonical = $seo['canonical'] ?? url()->current();
     $image = $seo['image'] ?? null;

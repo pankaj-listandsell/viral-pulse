@@ -33,7 +33,7 @@ class ArchiveController extends Controller
             'seo' => [
                 ...$this->seo->forPage(
                     'Latest stories',
-                    'The newest articles across every topic.',
+                    'Every article we have published, newest first — trending news, technology, entertainment, sport and explainers, updated throughout the day.',
                     route('latest'),
                     $request->integer('page', 1) > 1 ? 'noindex, follow' : null,
                 ),
@@ -59,7 +59,7 @@ class ArchiveController extends Controller
             'seo' => [
                 ...$this->seo->forPage(
                     'Trending now',
-                    'The most-read stories on the site right now.',
+                    'The stories being read the most right now, ranked by what readers are actually opening rather than by what was published most recently.',
                     route('trending'),
                     $request->integer('page', 1) > 1 ? 'noindex, follow' : null,
                 ),
@@ -74,7 +74,7 @@ class ArchiveController extends Controller
             'categories' => Category::active()->ordered()->get(['id', 'name', 'slug', 'color', 'icon', 'description', 'posts_count']),
             'seo' => $this->seo->forPage(
                 'Categories',
-                'Browse every topic we cover.',
+                'Every topic covered on the site, from breaking news and technology to entertainment, sport, health and travel. Pick a section to see its latest stories.',
                 route('categories.index'),
             ),
         ]);

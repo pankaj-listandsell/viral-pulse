@@ -37,7 +37,7 @@ class SettingSeeder extends Seeder
             // General
             ['group' => 'general', 'key' => 'site_name', 'value' => config('app.name'), 'type' => SettingType::String, 'is_public' => true],
             ['group' => 'general', 'key' => 'site_tagline', 'value' => 'Trending stories, explained fast.', 'type' => SettingType::String, 'is_public' => true],
-            ['group' => 'general', 'key' => 'site_description', 'value' => 'Daily trending news, technology, entertainment and explainers.', 'type' => SettingType::Text, 'is_public' => true],
+            ['group' => 'general', 'key' => 'site_description', 'value' => 'Daily coverage of what India is searching for — trending news, technology, entertainment, sport and clear explainers, published throughout the day.', 'type' => SettingType::Text, 'is_public' => true],
             ['group' => 'general', 'key' => 'site_logo', 'value' => null, 'type' => SettingType::File, 'is_public' => true],
             ['group' => 'general', 'key' => 'site_favicon', 'value' => null, 'type' => SettingType::File, 'is_public' => true],
             ['group' => 'general', 'key' => 'contact_email', 'value' => null, 'type' => SettingType::String, 'is_public' => true],
@@ -46,7 +46,7 @@ class SettingSeeder extends Seeder
 
             // SEO
             ['group' => 'seo', 'key' => 'seo_default_title', 'value' => config('app.name'), 'type' => SettingType::String, 'is_public' => true],
-            ['group' => 'seo', 'key' => 'seo_default_description', 'value' => 'Trending stories, explained fast.', 'type' => SettingType::Text, 'is_public' => true],
+            ['group' => 'seo', 'key' => 'seo_default_description', 'value' => 'Trending stories explained clearly and quickly — news, technology, entertainment and sport, updated through the day as things develop.', 'type' => SettingType::Text, 'is_public' => true],
             ['group' => 'seo', 'key' => 'seo_default_keywords', 'value' => null, 'type' => SettingType::String],
             ['group' => 'seo', 'key' => 'seo_default_og_image', 'value' => null, 'type' => SettingType::File, 'is_public' => true],
             ['group' => 'seo', 'key' => 'seo_twitter_handle', 'value' => null, 'type' => SettingType::String, 'is_public' => true],

@@ -30,6 +30,20 @@ class PageController extends Controller
         'disclaimer' => 'Disclaimer',
     ];
 
+    /**
+     * Each page gets its own description.
+     *
+     * Falling back to the site default gave all four of these the same
+     * sentence, and four pages sharing one description is a duplicate-content
+     * signal on the exact pages an ad network reads before approving a site.
+     */
+    private const DESCRIPTIONS = [
+        'about' => 'Who publishes this site, how the stories are chosen and written, and where AI is used in that process. Written plainly, with nothing hidden.',
+        'privacy' => 'What data this site collects, why, how long it is kept and how to have it removed. Covers cookies, analytics and advertising partners.',
+        'terms' => 'The terms you agree to by using this site: acceptable use, intellectual property, liability, and how these terms may change over time.',
+        'disclaimer' => 'The limits of what you should rely on here. Articles are for general information and are not professional, legal, medical or financial advice.',
+    ];
+
     public function __construct(private readonly SeoService $seo) {}
 
     public function show(string $page): View
@@ -37,14 +51,22 @@ class PageController extends Controller
         abort_unless(array_key_exists($page, self::PAGES), 404);
 
         return view("public.pages.{$page}", [
-            'seo' => $this->seo->forPage(self::PAGES[$page], null, route('pages.show', $page)),
+            'seo' => $this->seo->forPage(
+                self::PAGES[$page],
+                self::DESCRIPTIONS[$page],
+                route('pages.show', $page)
+            ),
         ]);
     }
 
     public function contact(): View
     {
         return view('public.pages.contact', [
-            'seo' => $this->seo->forPage('Contact', 'Get in touch with us.', route('contact')),
+            'seo' => $this->seo->forPage(
+                'Contact',
+                'Get in touch about a correction, a partnership, an advertising enquiry or anything else. Messages are read by a person and usually answered within a couple of days.',
+                route('contact')
+            ),
         ]);
     }
 
@@ -90,7 +112,11 @@ class PageController extends Controller
     public function sitemapPlaceholder(Request $request): View
     {
         return view('public.pages.sitemap', [
-            'seo' => $this->seo->forPage('Sitemap', 'Every page on the site.', route('sitemap.page')),
+            'seo' => $this->seo->forPage(
+                'Sitemap',
+                'Every section, category and recent article on the site in one place — the readable version of the XML sitemap search engines use.',
+                route('sitemap.page')
+            ),
         ]);
     }
 }

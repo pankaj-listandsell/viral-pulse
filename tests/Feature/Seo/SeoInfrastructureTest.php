@@ -75,10 +75,14 @@ class SeoInfrastructureTest extends TestCase
 
     public function test_empty_categories_and_tags_are_left_out(): void
     {
-        $used = Category::factory()->create(['slug' => 'has-posts', 'posts_count' => 3]);
-        Category::factory()->create(['slug' => 'is-empty', 'posts_count' => 0]);
-        Tag::factory()->create(['slug' => 'used-tag', 'posts_count' => 2]);
-        Tag::factory()->create(['slug' => 'unused-tag', 'posts_count' => 0]);
+        $used = Category::factory()->create(['slug' => 'has-posts']);
+        $this->publishedPost(['category_id' => $used->id]);
+
+        Category::factory()->create(['slug' => 'is-empty']);
+
+        $usedTag = Tag::factory()->create(['slug' => 'used-tag']);
+        $this->publishedPost()->tags()->attach($usedTag);
+        Tag::factory()->create(['slug' => 'unused-tag']);
 
         $this->get('/sitemap-categories.xml')
             ->assertOk()
@@ -90,6 +94,21 @@ class SeoInfrastructureTest extends TestCase
             ->assertOk()
             ->assertSee('used-tag')
             ->assertDontSee('unused-tag');
+    }
+
+    public function test_a_stale_counter_cannot_hide_a_category_from_the_sitemap(): void
+    {
+        // posts_count is denormalised. A seeder or an import that writes posts
+        // directly leaves it at zero, which used to drop a real category out of
+        // the sitemap silently - the worst place for a silent omission.
+        $category = Category::factory()->create(['slug' => 'counter-is-wrong', 'posts_count' => 0]);
+        $this->publishedPost(['category_id' => $category->id]);
+
+        $category->forceFill(['posts_count' => 0])->save();
+
+        $this->get('/sitemap-categories.xml')
+            ->assertOk()
+            ->assertSee(route('categories.show', 'counter-is-wrong'));
     }
 
     public function test_the_sitemap_is_rebuilt_when_a_post_is_published(): void

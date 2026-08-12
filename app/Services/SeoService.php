@@ -17,6 +17,12 @@ use Illuminate\Support\Str;
  */
 class SeoService
 {
+    /**
+     * Google renders about 155-160 characters of a description. Anything past
+     * that is cut mid-word in the results.
+     */
+    private const DESCRIPTION_LIMIT = 158;
+
     public function __construct(private readonly SettingsService $settings) {}
 
     /**
@@ -26,7 +32,7 @@ class SeoService
     {
         return [
             'title' => $post->seo_title ?: $post->title,
-            'description' => $post->seo_description ?: Str::limit(strip_tags($post->excerpt ?: $post->content), 155),
+            'description' => $this->description($post->seo_description ?: strip_tags($post->excerpt ?: $post->content)),
             'keywords' => $post->seo_keywords,
             // A canonical pointing elsewhere means the article was first
             // published there; otherwise it points at this page.
@@ -54,9 +60,11 @@ class SeoService
     {
         return [
             'title' => $category->seo_title ?: $category->name,
-            'description' => $category->seo_description
-                ?: Str::limit($category->description ?: "The latest {$category->name} stories.", 155),
+            'description' => $this->description(
+                $category->seo_description ?: $this->archiveDescription($category->name, $category->description, $category->posts_count)
+            ),
             'canonical' => route('categories.show', $category),
+            'image' => $this->imageUrl(null),
             'type' => 'website',
             // Page 2 onwards is thin, near-duplicate content. Keeping it out of
             // the index protects the pages that actually rank.
@@ -77,8 +85,9 @@ class SeoService
     {
         return [
             'title' => "#{$tag->name}",
-            'description' => Str::limit($tag->description ?: "Stories tagged {$tag->name}.", 155),
+            'description' => $this->description($this->archiveDescription($tag->name, $tag->description, $tag->posts_count)),
             'canonical' => route('tags.show', $tag),
+            'image' => $this->imageUrl(null),
             'robots' => $page > 1 ? 'noindex, follow' : null,
             'schemas' => [
                 $this->breadcrumbSchema([
@@ -96,10 +105,58 @@ class SeoService
     {
         return [
             'title' => $title,
-            'description' => $description ?: $this->settings->get('seo_default_description'),
+            'description' => $this->description($description ?: $this->settings->get('seo_default_description')),
             'canonical' => $canonical ?: url()->current(),
+            'image' => $this->imageUrl(null),
             'robots' => $robots,
         ];
+    }
+
+    /**
+     * Clamps a description to what a search engine will actually render, at a
+     * word boundary.
+     *
+     * Applied here rather than trusted to the source: the AI writer already
+     * trims its own output, but an editor typing 300 characters into the SEO
+     * field would otherwise ship all 300 and have it cut mid-word in the
+     * results page.
+     */
+    private function description(?string $text): ?string
+    {
+        $text = trim(preg_replace('/\s+/u', ' ', (string) $text) ?? '');
+
+        if ($text === '') {
+            return null;
+        }
+
+        if (mb_strlen($text) <= self::DESCRIPTION_LIMIT) {
+            return $text;
+        }
+
+        $cut = mb_substr($text, 0, self::DESCRIPTION_LIMIT);
+        $lastSpace = mb_strrpos($cut, ' ');
+
+        return rtrim($lastSpace ? mb_substr($cut, 0, $lastSpace) : $cut, " ,;:-\u{2014}").'…';
+    }
+
+    /**
+     * A fallback with enough substance to be used.
+     *
+     * "Stories tagged UPI." is nineteen characters; Google discards a snippet
+     * that thin and writes its own from the page, which is a worse one.
+     */
+    private function archiveDescription(string $name, ?string $existing, int $count): string
+    {
+        if (filled($existing) && mb_strlen($existing) >= 70) {
+            return $existing;
+        }
+
+        $site = $this->siteName();
+        $articles = $count === 1 ? '1 article' : "{$count} articles";
+
+        return trim(($existing ? rtrim($existing, '.').'. ' : ''))
+            ."Read {$articles} about {$name} on {$site} — the latest updates, explainers and "
+            .'background, kept current as the story develops.';
     }
 
     /**
@@ -113,7 +170,7 @@ class SeoService
             '@context' => 'https://schema.org',
             '@type' => 'Article',
             'headline' => Str::limit($post->title, 110, ''),
-            'description' => $post->seo_description ?: Str::limit(strip_tags($post->excerpt ?? ''), 155),
+            'description' => $this->description($post->seo_description ?: strip_tags($post->excerpt ?? '')),
             'image' => $image ? [$image] : null,
             'datePublished' => $post->published_at?->toIso8601String(),
             'dateModified' => $post->updated_at?->toIso8601String(),
@@ -238,14 +295,19 @@ class SeoService
      */
     private function imageUrl(?string $path): ?string
     {
-        if (blank($path)) {
-            return $this->settings->get('seo_default_og_image')
-                ? Storage::disk(config('site.media.disk'))->url($this->settings->get('seo_default_og_image'))
-                : null;
+        // The site logo is a poor share image but a far better one than none:
+        // a link with no picture is visibly smaller in every feed and gets
+        // clicked less. A real 1200x630 default belongs in Settings -> SEO.
+        $candidate = $path
+            ?: $this->settings->get('seo_default_og_image')
+            ?: $this->settings->get('site_logo');
+
+        if (blank($candidate)) {
+            return null;
         }
 
-        return Str::startsWith($path, ['http://', 'https://'])
-            ? $path
-            : Storage::disk(config('site.media.disk'))->url($path);
+        return Str::startsWith($candidate, ['http://', 'https://'])
+            ? $candidate
+            : Storage::disk(config('site.media.disk'))->url($candidate);
     }
 }
