@@ -21,7 +21,9 @@ use Illuminate\Support\Facades\Storage;
 class BrandSeeder extends Seeder
 {
     private const ASSETS = [
-        'site_logo' => ['logo.png', 'settings/site-logo.png'],
+        // The square mark, not the wordmark: the header renders the site name as
+        // live text beside it, and a wordmark there would print the name twice.
+        'site_logo' => ['mark.png', 'settings/site-logo.png'],
         'site_favicon' => ['favicon.png', 'settings/site-favicon.png'],
         'seo_default_og_image' => ['share-card.png', 'settings/share-card.png'],
     ];

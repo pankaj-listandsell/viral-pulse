@@ -7,9 +7,13 @@
 <header class="sticky top-0 z-40 border-b border-gray-200 bg-white/90 backdrop-blur dark:border-gray-800 dark:bg-gray-950/90">
     <div class="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
         <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-2.5" aria-label="{{ $siteName }} home">
+            {{-- This slot wants a square mark, not a wordmark: the site name is
+                 rendered as live text beside it. Text beats a picture of text
+                 here - it stays sharp at any zoom, it is selectable, and it
+                 recolours itself in dark mode, which a flat PNG cannot. --}}
             @if($logo)
-                <img src="{{ Storage::disk(config('site.media.disk'))->url($logo) }}" alt="{{ $siteName }}"
-                     class="h-8 w-auto" height="32">
+                <img src="{{ Storage::disk(config('site.media.disk'))->url($logo) }}" alt=""
+                     class="size-8 shrink-0 rounded-lg object-contain" width="32" height="32">
             @else
                 <span class="grid size-8 place-items-center rounded-lg bg-brand-600 text-white">
                     <x-icon name="flame" class="size-5" />
