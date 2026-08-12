@@ -31,11 +31,19 @@ The original schema had a `roles` table with admin/editor/author/user and six po
 - All six policy classes deleted. Authorization is one question — *is this an active admin?* — answered by the `admin` middleware and a single `access-admin` gate.
 - Result: materially less code, and no ambiguity about who can do what.
 
-### D3 — AI provider ✅ **Anthropic** (`claude-sonnet-5`) as the default
+### D3 — AI provider ✅ **Gemini** (`gemini-2.5-flash`) as the default *(revised during Phase 6)*
 
-The architecture is provider-agnostic: `AiProviderInterface` with swappable drivers selected by `AI_PROVIDER`. OpenAI and Gemini drivers ship as alternatives. Switching later is a one-line `.env` change.
+The architecture is provider-agnostic: an `AiProvider` contract with swappable drivers, chosen from Settings. **Gemini and OpenAI only** — Anthropic was dropped on request and its driver is not shipped.
 
-### D4 — Locale ✅ `APP_TIMEZONE=Asia/Kolkata`, default content language `en`, `hi` supported
+Keys live in `.env` and never in the database. A provider with no key is simply not offered in the admin.
+
+### D4 — Locale ✅ `APP_TIMEZONE=Asia/Kolkata`, content in **English**, India-focused *(settled 2026-08-12)*
+
+English rather than Hindi, for revenue reasons rather than editorial ones: advertisers bid more for English inventory, and English also draws traffic from outside India where rates are higher again. Hindi has less competition and scales volume faster, but needs roughly three to four times the pageviews to earn the same money.
+
+Two supporting reasons: Gemini's English is markedly better than its Hindi, so a Hindi pipeline would need manual repair on every article and stop being automation; and the stack is already tuned for English — the FULLTEXT index uses the 36 default English stopwords, `words_per_minute` is 200, and slug generation falls back to `Str::ascii`.
+
+**Do not mix both languages on this site as it stands.** There are no `hreflang` tags, and the `language` column on `posts` is stored but never used to filter the feeds, the archives or the sitemap — so Hindi and English articles would land in the same listings and neither would rank well. If Hindi is wanted later it belongs on its own subdomain with its own sitemap, plus `hreflang`, language-filtered archives and a Hindi stopword list. Roughly half a day of work; deliberately not done now.
 
 ### D5 — Publishing policy ✅ `AUTO_PUBLISH=false` by default
 
