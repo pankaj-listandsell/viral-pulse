@@ -1,12 +1,16 @@
 <?php
 
+use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AiGeneratorController;
 use App\Http\Controllers\Admin\AiSettingsController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\ScheduledPostController;
+use App\Http\Controllers\Admin\SeoSettingsController;
+use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TrendingTopicController;
 use App\Http\Controllers\Admin\UserController;
@@ -104,4 +108,21 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('{user}/toggle-active', 'toggleActive')->name('toggle-active');
         Route::delete('{user}', 'destroy')->name('destroy');
     });
+
+    Route::controller(ContactMessageController::class)->prefix('messages')->name('messages.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('bulk', 'bulk')->name('bulk');
+        Route::get('{message}', 'show')->name('show');
+        Route::post('{message}/status', 'updateStatus')->name('status');
+        Route::delete('{message}', 'destroy')->name('destroy');
+    });
+
+    Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
+    Route::post('settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::post('settings/flush', [SettingsController::class, 'flushCaches'])->name('settings.flush');
+
+    Route::get('seo', [SeoSettingsController::class, 'edit'])->name('seo.edit');
+    Route::post('seo', [SeoSettingsController::class, 'update'])->name('seo.update');
+
+    Route::get('activity', [ActivityLogController::class, 'index'])->name('activity.index');
 });

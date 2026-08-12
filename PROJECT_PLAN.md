@@ -482,8 +482,8 @@ Queue: supervisor on Linux; NSSM or Task Scheduler if hosting on Windows.
 | 6 — AI generation | ✅ Done — Gemini + OpenAI, quality gate, 149 tests green |
 | 7 — Trending + scheduler + auto-publish | ✅ Done — feeds → scored topics → drip-published articles, 193 tests green |
 | 8 — SEO infrastructure | ✅ Done — sitemaps, robots, RSS, ads.txt, 301s on rename, 222 tests green |
-| 9 — Contact, settings, activity log | Next |
-| 10 | Planned above |
+| 9 — Contact, settings, activity log | ✅ Done — inbox, schema-driven settings, SEO screen, log viewer, 257 tests green |
+| 10 — Testing, performance, security, deployment | Next |
 
 **Admin URL:** `/admin/login`. The public site does not link to it and there is no `/login` or `/register`.
 

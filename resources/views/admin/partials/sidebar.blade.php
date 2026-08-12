@@ -31,7 +31,7 @@
         [
             'label' => 'Audience',
             'items' => [
-                ['route' => 'admin.messages.index', 'label' => 'Contact Messages', 'icon' => 'inbox'],
+                ['route' => 'admin.messages.index', 'label' => 'Contact Messages', 'icon' => 'inbox', 'badge' => 'unread_messages'],
             ],
         ],
         [
@@ -98,6 +98,14 @@
                             >
                                 <x-icon :name="$item['icon']" class="size-5 shrink-0" />
                                 <span x-show="!$store.sidebar.collapsed" class="truncate" x-cloak>{{ $item['label'] }}</span>
+
+                                @if(($item['badge'] ?? null) === 'unread_messages' && $unreadMessages > 0)
+                                    <span
+                                        x-show="!$store.sidebar.collapsed"
+                                        class="ml-auto rounded-full bg-brand-600 px-1.5 py-0.5 text-[0.65rem] font-semibold text-white"
+                                        x-cloak
+                                    >{{ $unreadMessages > 99 ? '99+' : $unreadMessages }}</span>
+                                @endif
                             </a>
                         </li>
                     @endforeach

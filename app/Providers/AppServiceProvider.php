@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\ContactMessage;
 use App\Models\User;
 use App\Services\AI\AiProviderManager;
 use App\Services\MediaResolver;
@@ -9,6 +10,7 @@ use App\Services\SettingsService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -50,6 +52,17 @@ class AppServiceProvider extends ServiceProvider
     {
         View::composer('layouts.*', function ($view): void {
             $view->with('siteSettings', app(SettingsService::class)->public());
+        });
+
+        // The inbox badge. Cached for a minute so it costs one query per
+        // minute rather than one on every admin page load, and flushed the
+        // moment a message changes state so the count is never visibly wrong.
+        View::composer('admin.partials.sidebar', function ($view): void {
+            $view->with('unreadMessages', Cache::remember(
+                'admin.unread-messages',
+                now()->addMinute(),
+                fn (): int => ContactMessage::unread()->count()
+            ));
         });
     }
 

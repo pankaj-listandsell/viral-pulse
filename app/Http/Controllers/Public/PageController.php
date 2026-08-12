@@ -4,11 +4,16 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\ContactRequest;
+use App\Mail\ContactMessageReceived;
 use App\Models\ContactMessage;
+use App\Models\User;
 use App\Services\SeoService;
+use App\Services\SettingsService;
 use App\Support\Fingerprint;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class PageController extends Controller
@@ -45,12 +50,38 @@ class PageController extends Controller
 
     public function submitContact(ContactRequest $request): RedirectResponse
     {
-        ContactMessage::create([
+        $message = ContactMessage::create([
             ...$request->safe()->only('name', 'email', 'subject', 'message'),
             'ip_hash' => Fingerprint::ip($request->ip()),
         ]);
 
+        $this->notifyAdmin($message);
+
         return back()->with('success', 'Thanks — your message is on its way. We usually reply within a couple of days.');
+    }
+
+    /**
+     * The message is already saved by this point, so a mail failure is logged
+     * rather than thrown: an SMTP outage must not lose the visitor's message or
+     * show them an error for something that worked.
+     */
+    private function notifyAdmin(ContactMessage $message): void
+    {
+        $to = app(SettingsService::class)->get('contact_email')
+            ?: User::admins()->value('email');
+
+        if (blank($to)) {
+            return;
+        }
+
+        try {
+            Mail::to($to)->send(new ContactMessageReceived($message));
+        } catch (\Throwable $e) {
+            Log::warning('Contact notification could not be sent', [
+                'message' => $message->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
