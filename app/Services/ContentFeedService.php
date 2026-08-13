@@ -188,6 +188,11 @@ class ContentFeedService
     {
         return Cache::remember('feed.navigation', self::TTL, fn () => Category::query()
             ->active()
+            // The header already carries a Trending link to the most-read page,
+            // and the fallback category is called Trending too, so both showed
+            // up side by side with the same label pointing at different pages.
+            // The category is still reachable from /categories and its own URL.
+            ->where('slug', '!=', config('trending.fallback_category', 'trending'))
             ->ordered()
             ->limit($limit)
             ->get(['id', 'name', 'slug', 'color']));

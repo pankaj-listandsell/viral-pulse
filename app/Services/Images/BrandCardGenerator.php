@@ -27,6 +27,20 @@ class BrandCardGenerator implements FeaturedImageGenerator
 
     private const HEIGHT = 630;
 
+    /**
+     * Horizontal margin, sized so nothing important is lost to a crop.
+     *
+     * This card is 1.9:1, and it is displayed in containers that are not: the
+     * hero is 16:10 and the listing thumbnails are 16:9, both narrower, so
+     * object-cover shaves the sides off. At the narrowest of those the visible
+     * strip is 630 x 1.6 = 1008px, leaving 96px cut from each edge - which is
+     * why the headline was arriving with its first letters missing.
+     *
+     * 96 would only just survive; the extra 40 is so the text still has a
+     * margin once cropped rather than sitting flat against the edge.
+     */
+    private const MARGIN = 136;
+
     private const BLACK_FONT = 'C:/Windows/Fonts/seguibl.ttf';
 
     private const BOLD_FONT = 'C:/Windows/Fonts/segoeuib.ttf';
@@ -124,7 +138,7 @@ class BrandCardGenerator implements FeaturedImageGenerator
         $name = app(SettingsService::class)->get('site_name') ?: config('app.name');
         $logo = resource_path('brand/mark.png');
 
-        $x = 72;
+        $x = self::MARGIN;
 
         if (is_file($logo) && ($mark = @imagecreatefrompng($logo))) {
             imagealphablending($im, true);
@@ -143,7 +157,7 @@ class BrandCardGenerator implements FeaturedImageGenerator
     {
         $label = Str::upper($post->category?->name ?? 'Latest');
         $width = $this->width(self::BOLD_FONT, 19, $label);
-        $right = self::WIDTH - 72;
+        $right = self::WIDTH - self::MARGIN;
 
         imagefilledrectangle($im, $right - $width - 28, 64, $right, 108, imagecolorallocate($im, ...$accent));
         $this->text($im, self::BOLD_FONT, 19, $right - $width - 14, 93, [255, 255, 255], $label);
@@ -154,7 +168,7 @@ class BrandCardGenerator implements FeaturedImageGenerator
      */
     private function headline($im, Post $post): void
     {
-        $maxWidth = self::WIDTH - 144;
+        $maxWidth = self::WIDTH - (self::MARGIN * 2);
         $title = trim($post->title);
 
         // Three lines is the target, not the limit. A long headline set at the
@@ -179,7 +193,7 @@ class BrandCardGenerator implements FeaturedImageGenerator
         $y = (int) round((self::HEIGHT / 2) - ((count($lines) - 1) * $leading / 2) + $size * 0.34);
 
         foreach ($lines as $line) {
-            $this->text($im, self::BLACK_FONT, $size, 72, $y, [255, 255, 255], $line);
+            $this->text($im, self::BLACK_FONT, $size, self::MARGIN, $y, [255, 255, 255], $line);
             $y += $leading;
         }
     }
@@ -189,7 +203,7 @@ class BrandCardGenerator implements FeaturedImageGenerator
         $date = ($post->published_at ?? $post->created_at ?? now())->format('j F Y');
         $reading = $post->reading_time ? " · {$post->reading_time} min read" : '';
 
-        $this->text($im, self::BOLD_FONT, 22, 72, self::HEIGHT - 62, [148, 163, 184], $date.$reading);
+        $this->text($im, self::BOLD_FONT, 22, self::MARGIN, self::HEIGHT - 62, [148, 163, 184], $date.$reading);
     }
 
     /**
