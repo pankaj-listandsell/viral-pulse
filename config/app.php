@@ -59,13 +59,17 @@ return [
     | Application Timezone
     |--------------------------------------------------------------------------
     |
-    | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | The audience is in India and everything time-shaped here is written for
+    | them: the publishing window is "07:00 to 22:00" meaning their morning to
+    | their night, and the nightly rollups mean their midnight.
+    |
+    | Laravel ships this hardcoded to UTC. Left that way, APP_TIMEZONE in .env
+    | is read by nothing, the publishing window lands at 12:30-03:30 IST, and
+    | the site posts through the Indian night while skipping the morning peak.
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'UTC'),
 
     /*
     |--------------------------------------------------------------------------

@@ -130,6 +130,42 @@ class ScheduledPublishingTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_a_slot_is_never_handed_out_in_the_past(): void
+    {
+        config([
+            'trending.publishing.window_start' => '07:00',
+            'trending.publishing.window_end' => '22:00',
+            'trending.publishing.lead_minutes' => 15,
+        ]);
+
+        // Mid-morning, well after the window opens. This came out as 07:00 in
+        // real use because the app was running in UTC while the window times
+        // were written for IST, so "now" looked like 04:47 and the window had
+        // not opened yet.
+        Carbon::setTestNow(today()->setTime(10, 20));
+
+        $slot = app(PublishWindow::class)->nextSlot();
+
+        $this->assertNotNull($slot);
+        $this->assertTrue($slot->isFuture(), "The slot {$slot} is in the past.");
+        $this->assertSame('10:35', $slot->format('H:i'));
+
+        Carbon::setTestNow();
+    }
+
+    public function test_the_application_timezone_comes_from_the_environment(): void
+    {
+        // config/app.php ships with 'timezone' => 'UTC' hardcoded, so
+        // APP_TIMEZONE in .env is read by nothing until that is changed. For an
+        // India-only audience that silently moved the whole publishing window
+        // five and a half hours, into the middle of the night.
+        $this->assertSame(
+            env('APP_TIMEZONE', 'UTC'),
+            config('app.timezone'),
+            'config/app.php is not reading APP_TIMEZONE.'
+        );
+    }
+
     public function test_slots_in_one_run_are_spaced_by_the_configured_gap(): void
     {
         config([

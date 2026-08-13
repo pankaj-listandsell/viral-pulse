@@ -40,6 +40,13 @@ class TrendingGenerationTest extends TestCase
         Http::preventStrayRequests();
         config(['ai.providers.gemini.key' => 'test-key-not-real']);
 
+        // Pinned rather than inherited from .env, so tuning the live site's
+        // quality threshold cannot turn the suite red.
+        config([
+            'site.content.min_words' => 400,
+            'site.content.min_quality_score' => 70,
+        ]);
+
         $this->provider = new FakeProvider;
         app(AiProviderManager::class)->swap($this->provider);
 

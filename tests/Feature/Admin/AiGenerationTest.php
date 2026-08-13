@@ -43,6 +43,15 @@ class AiGenerationTest extends TestCase
 
         config(['ai.providers.gemini.key' => 'test-key-not-real']);
 
+        // Pinned rather than inherited from .env. These tests are about how the
+        // quality gate behaves at a known threshold; tuning the live site's
+        // numbers should not turn the suite red.
+        config([
+            'site.content.min_words' => 400,
+            'site.content.min_quality_score' => 70,
+            'site.content.auto_publish' => false,
+        ]);
+
         $this->provider = new FakeProvider;
         app(AiProviderManager::class)->swap($this->provider);
 
