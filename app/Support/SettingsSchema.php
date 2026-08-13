@@ -170,6 +170,19 @@ final class SettingsSchema
                 ],
             ],
 
+            'keys' => [
+                'label' => 'API keys',
+                'description' => 'Stored encrypted with your APP_KEY, so a stolen database dump holds ciphertext rather than working keys. Leave a field blank to keep the key already saved.',
+                'fields' => [
+                    ['key' => 'gemini_api_key', 'label' => 'Gemini API key', 'input' => 'secret', 'rules' => ['nullable', 'string', 'max:400'],
+                        'help' => 'From aistudio.google.com/apikey. Needed for the article writer.'],
+                    ['key' => 'openai_api_key', 'label' => 'OpenAI API key', 'input' => 'secret', 'rules' => ['nullable', 'string', 'max:400'],
+                        'help' => 'Optional. Only needed if you switch the provider to OpenAI.'],
+                    ['key' => 'news_api_key', 'label' => 'News API key', 'input' => 'secret', 'rules' => ['nullable', 'string', 'max:400'],
+                        'help' => 'Optional. Adds newsapi.org as an extra trending source; Google Trends and Google News need no key.'],
+                ],
+            ],
+
             'ai' => [
                 'label' => 'AI',
                 'description' => 'How much the generator is allowed to do on its own. The provider, the model and the API key live elsewhere.',

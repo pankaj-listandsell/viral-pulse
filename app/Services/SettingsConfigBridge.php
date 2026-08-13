@@ -41,6 +41,12 @@ class SettingsConfigBridge
         'content_min_words' => 'site.content.min_words',
         'content_min_quality_score' => 'site.content.min_quality_score',
         'auto_featured_image' => 'site.media.auto_featured_image',
+        // Secrets. .env stays the fallback, so nothing breaks for an install
+        // that has not moved its keys yet.
+        'gemini_api_key' => 'ai.providers.gemini.key',
+        'openai_api_key' => 'ai.providers.openai.key',
+        'news_api_key' => 'trending.sources.news_api.key',
+
         'ai_max_tokens' => 'ai.max_tokens',
         'ai_timeout' => 'ai.timeout',
         'media_max_upload_kb' => 'site.media.max_upload_kb',

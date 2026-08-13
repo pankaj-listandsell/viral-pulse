@@ -31,11 +31,11 @@ The original schema had a `roles` table with admin/editor/author/user and six po
 - All six policy classes deleted. Authorization is one question — *is this an active admin?* — answered by the `admin` middleware and a single `access-admin` gate.
 - Result: materially less code, and no ambiguity about who can do what.
 
-### D3 — AI provider ✅ **Gemini** (`gemini-2.5-flash`) as the default *(revised during Phase 6)*
+### D3 — AI provider ✅ **Gemini** (`gemini-3.6-flash`) as the default *(revised during Phase 6)*
 
 The architecture is provider-agnostic: an `AiProvider` contract with swappable drivers, chosen from Settings. **Gemini and OpenAI only** — Anthropic was dropped on request and its driver is not shipped.
 
-Keys live in `.env` and never in the database. A provider with no key is simply not offered in the admin.
+Keys are entered from Settings -> API keys and encrypted with `APP_KEY` before storage, so a database dump holds ciphertext rather than working keys; `.env` remains a fallback. A provider with no key is simply not offered in the admin.
 
 ### D4 — Locale ✅ `APP_TIMEZONE=Asia/Kolkata`, content in **English**, India-focused *(settled 2026-08-12)*
 

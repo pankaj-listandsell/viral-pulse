@@ -35,7 +35,7 @@ return [
 
         'news_api' => [
             // Only used when a key is present; the free tier is enough here.
-            'enabled' => env('NEWS_API_KEY') !== null,
+            'enabled' => true,
             'source' => 'news_api',
             'url' => 'https://newsapi.org/v2/top-headlines',
             'key' => env('NEWS_API_KEY'),

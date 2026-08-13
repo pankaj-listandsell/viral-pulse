@@ -34,6 +34,30 @@
                 </x-ui.select>
                 @break
 
+            @case('secret')
+                {{-- The stored value is never sent to the browser, not even
+                     masked into the field: a saved key would then sit in the
+                     page source of every settings visit. The placeholder shows
+                     only that something is saved. --}}
+                <x-ui.input
+                    :id="$id"
+                    :name="$key"
+                    type="password"
+                    value=""
+                    autocomplete="off"
+                    :placeholder="filled($value) ? 'A key is saved — leave blank to keep it' : 'Not set'"
+                    :invalid="$errors->has($key)"
+                />
+
+                @if(filled($value))
+                    <label class="mt-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <input type="checkbox" name="remove_{{ $key }}" value="1"
+                               class="rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900">
+                        Remove the saved key
+                    </label>
+                @endif
+                @break
+
             @case('image')
                 @if($current)
                     <div class="mb-2 flex items-center gap-3">

@@ -108,9 +108,14 @@ resources/
 admin? — expressed as one gate. Per-model policies would add ceremony without
 saying anything more.
 
-**API keys live in `.env`, never in the database.** A key in the settings table
-would appear in every database dump, every backup, and on the settings screen
-itself. Only the *choice* of provider is stored.
+**API keys are encrypted at rest.** They can be entered from Settings → API
+keys, and are encrypted with `APP_KEY` before being written, so a stolen
+database dump — the realistic way these escape — holds ciphertext rather than
+working keys. The saved value is never sent back to the browser, not even
+masked. `.env` still works as a fallback for anyone who prefers it.
+
+`APP_KEY` therefore needs backing up somewhere other than the database. Lose it
+and the stored keys are unreadable; they simply have to be entered again.
 
 **Raw IP addresses are never stored.** Views, likes, contact messages and
 activity logs all keep a salted HMAC instead, so submissions can be matched

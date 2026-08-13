@@ -40,6 +40,19 @@ class SettingsWriter
                 continue;
             }
 
+            // A blank secret means "keep what is saved", not "erase it" - the
+            // field is never prefilled, so every save would otherwise wipe the
+            // key the moment anyone edited an unrelated setting.
+            if (($field['input'] ?? null) === 'secret') {
+                if ($request->boolean("remove_{$key}")) {
+                    $values[$key] = null;
+                } elseif (filled($validated[$key] ?? null)) {
+                    $values[$key] = trim((string) $validated[$key]);
+                }
+
+                continue;
+            }
+
             // An unchecked box is absent from the request rather than false, so
             // booleans are read from the request itself. Taken from $validated,
             // a toggle could be switched on but never off.

@@ -207,20 +207,39 @@ class SettingsScreenTest extends TestCase
             ->assertSessionHasErrors('seo_robots_default');
     }
 
-    public function test_settings_never_accept_an_api_key(): void
+    public function test_a_field_posted_to_the_wrong_group_is_ignored(): void
     {
+        // Writing is driven by the group's schema, not by whatever the request
+        // happens to contain, so a field smuggled into another tab's form is
+        // never written. API keys belong to the "keys" group.
         $this->actingAs($this->admin)
             ->post(route('admin.settings.update'), [
                 'group' => 'ai',
                 'ai_daily_limit' => 20,
-                'ai_default_language' => 'en',
-                'ai_default_tone' => 'informative',
-                'gemini_api_key' => 'a-key-that-should-never-be-stored',
+                'ai_max_tokens' => 16000,
+                'ai_timeout' => 180,
+                'ai_retries' => 3,
+                'analytics_retention_days' => 90,
+                'activity_log_retention_days' => 180,
+                'gemini_api_key' => 'smuggled-through-the-wrong-form',
             ]);
 
-        // Keys live in .env. One stored here would appear in every database
-        // dump, every backup, and on this screen.
-        $this->assertDatabaseMissing('settings', ['key' => 'gemini_api_key']);
+        $this->assertNull(app(SettingsService::class)->get('gemini_api_key'));
+    }
+
+    public function test_a_stored_key_is_never_written_in_plain_text(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('admin.settings.update'), [
+                'group' => 'keys',
+                'gemini_api_key' => 'a-key-that-must-not-sit-in-the-column',
+            ])
+            ->assertSessionHasNoErrors();
+
+        // The database is the one place these realistically leak from, via a
+        // dump or a backup, so the column holds ciphertext.
+        $this->assertDatabaseMissing('settings', ['value' => 'a-key-that-must-not-sit-in-the-column']);
+        $this->assertSame('a-key-that-must-not-sit-in-the-column', app(SettingsService::class)->get('gemini_api_key'));
     }
 
     public function test_caches_can_be_cleared_by_hand(): void

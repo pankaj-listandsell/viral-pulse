@@ -110,6 +110,12 @@ class SettingSeeder extends Seeder
             ['group' => 'quality', 'key' => 'media_webp_enabled', 'value' => config('site.media.webp', true) ? '1' : '0', 'type' => SettingType::Boolean],
             ['group' => 'quality', 'key' => 'auto_featured_image', 'value' => config('site.media.auto_featured_image', true) ? '1' : '0', 'type' => SettingType::Boolean],
 
+            // Secrets. Encrypted at rest with APP_KEY; .env still works as a
+            // fallback so an existing install keeps running untouched.
+            ['group' => 'keys', 'key' => 'gemini_api_key', 'value' => null, 'type' => SettingType::Encrypted],
+            ['group' => 'keys', 'key' => 'openai_api_key', 'value' => null, 'type' => SettingType::Encrypted],
+            ['group' => 'keys', 'key' => 'news_api_key', 'value' => null, 'type' => SettingType::Encrypted],
+
             // AI limits and data retention.
             ['group' => 'ai', 'key' => 'ai_max_tokens', 'value' => (string) config('ai.max_tokens', 16000), 'type' => SettingType::Integer],
             ['group' => 'ai', 'key' => 'ai_timeout', 'value' => (string) config('ai.timeout', 180), 'type' => SettingType::Integer],
