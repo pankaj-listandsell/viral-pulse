@@ -16,7 +16,11 @@ enum SettingType: string
      */
     public function cast(?string $value): mixed
     {
-        if ($value === null) {
+        // An empty string is "not configured", the same as null. Without this
+        // an empty integer setting casts to 0 and an empty boolean to false,
+        // so clearing a field reads as "set it to zero" - which is how an
+        // untouched daily limit could switch generation off entirely.
+        if ($value === null || trim($value) === '') {
             return null;
         }
 

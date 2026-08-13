@@ -4,6 +4,7 @@ namespace App\Services\Trending;
 
 use App\Enums\PostStatus;
 use App\Models\Post;
+use App\Rules\ValidTimeList;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -50,6 +51,66 @@ class PublishWindow
      * @param  array<int, Carbon>  $reserved  slots handed out earlier in this run
      */
     public function nextSlot(array $reserved = []): ?Carbon
+    {
+        $times = ValidTimeList::parse((string) config('trending.publishing.slots'));
+
+        return $times === []
+            ? $this->nextEvenlySpacedSlot($reserved)
+            : $this->nextNamedSlot($times, $reserved);
+    }
+
+    /**
+     * The next unused one of the exact times the admin listed.
+     *
+     * Preferred over even spacing when set, because "publish at 08:00, 13:00
+     * and 19:00" is a decision about when an audience is reading, and no
+     * amount of automatic spacing can guess that.
+     *
+     * @param  array<int, string>  $times  HH:MM, already sorted
+     * @param  array<int, Carbon>  $reserved
+     */
+    private function nextNamedSlot(array $times, array $reserved): ?Carbon
+    {
+        $config = (array) config('trending.publishing', []);
+        $maxPerDay = max(1, (int) ($config['max_per_day'] ?? 8));
+        $earliest = now()->addMinutes(max(0, (int) ($config['lead_minutes'] ?? 15)));
+
+        for ($offset = 0; $offset <= 14; $offset++) {
+            $date = today()->addDays($offset);
+
+            $taken = $this->slotsOn($date)->concat(
+                collect($reserved)->filter(fn (Carbon $slot) => $slot->isSameDay($date))
+            );
+
+            if ($taken->count() >= $maxPerDay) {
+                continue;
+            }
+
+            foreach ($times as $time) {
+                [$hour, $minute] = array_map('intval', explode(':', $time));
+                $candidate = $date->copy()->setTime($hour, $minute);
+
+                if ($candidate->lessThan($earliest)) {
+                    continue;
+                }
+
+                // A time already used that day is skipped rather than doubled
+                // up, so two articles never land on the same minute.
+                $clash = $taken->contains(fn (Carbon $slot) => $slot->format('H:i') === $time);
+
+                if (! $clash) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<int, Carbon>  $reserved
+     */
+    private function nextEvenlySpacedSlot(array $reserved = []): ?Carbon
     {
         $config = (array) config('trending.publishing', []);
 

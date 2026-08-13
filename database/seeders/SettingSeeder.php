@@ -83,12 +83,21 @@ class SettingSeeder extends Seeder
             ['group' => 'features', 'key' => 'search_enabled', 'value' => '1', 'type' => SettingType::Boolean, 'is_public' => true],
             ['group' => 'features', 'key' => 'show_ai_disclosure', 'value' => '1', 'type' => SettingType::Boolean, 'is_public' => true],
 
-            // AI
-            ['group' => 'ai', 'key' => 'ai_auto_publish', 'value' => '0', 'type' => SettingType::Boolean],
-            ['group' => 'ai', 'key' => 'ai_auto_generate', 'value' => '0', 'type' => SettingType::Boolean],
+            // Publishing. Seeded from the environment for the same reason.
+            ['group' => 'publishing', 'key' => 'publish_slots', 'value' => null, 'type' => SettingType::String],
+            ['group' => 'publishing', 'key' => 'publish_max_per_day', 'value' => (string) config('trending.publishing.max_per_day', 8), 'type' => SettingType::Integer],
+            ['group' => 'publishing', 'key' => 'publish_lead_minutes', 'value' => (string) config('trending.publishing.lead_minutes', 15), 'type' => SettingType::Integer],
+            ['group' => 'publishing', 'key' => 'trending_generate_per_run', 'value' => (string) config('trending.automation.per_run', 2), 'type' => SettingType::Integer],
+            ['group' => 'publishing', 'key' => 'trending_min_score', 'value' => (string) config('trending.automation.min_score', 45), 'type' => SettingType::Integer],
+
+            // AI. Seeded from the environment rather than hardcoded: these
+            // rows override config once set, so a default that disagreed with
+            // .env would silently undo whatever the environment asked for.
+            ['group' => 'ai', 'key' => 'ai_auto_publish', 'value' => config('site.content.auto_publish') ? '1' : '0', 'type' => SettingType::Boolean],
+            ['group' => 'ai', 'key' => 'ai_auto_generate', 'value' => config('trending.automation.enabled') ? '1' : '0', 'type' => SettingType::Boolean],
             ['group' => 'ai', 'key' => 'ai_default_language', 'value' => 'en', 'type' => SettingType::String],
             ['group' => 'ai', 'key' => 'ai_default_tone', 'value' => 'informative', 'type' => SettingType::String],
-            ['group' => 'ai', 'key' => 'ai_daily_limit', 'value' => '50', 'type' => SettingType::Integer],
+            ['group' => 'ai', 'key' => 'ai_daily_limit', 'value' => (string) config('ai.daily_limit', 50), 'type' => SettingType::Integer],
         ];
     }
 }

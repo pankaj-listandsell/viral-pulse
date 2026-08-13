@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Enums\ContentTone;
 use App\Enums\SettingType;
+use App\Rules\ValidTimeList;
 use Illuminate\Validation\Rule;
 
 /**
@@ -104,6 +105,23 @@ final class SettingsSchema
                     ['key' => 'search_enabled', 'label' => 'Site search', 'input' => 'boolean', 'rules' => ['boolean']],
                     ['key' => 'newsletter_enabled', 'label' => 'Newsletter signup', 'input' => 'boolean', 'rules' => ['boolean']],
                     ['key' => 'show_ai_disclosure', 'label' => 'Disclose AI-written articles', 'input' => 'boolean', 'rules' => ['boolean'], 'help' => 'Leave this on. Hiding it is the kind of thing an AdSense review treats as deceptive.'],
+                ],
+            ],
+
+            'publishing' => [
+                'label' => 'Publishing',
+                'description' => 'When automatically written articles go live. Times are in the site timezone ('.config('app.timezone').').',
+                'fields' => [
+                    ['key' => 'publish_slots', 'label' => 'Publishing times', 'input' => 'text', 'rules' => ['nullable', 'string', 'max:255', new ValidTimeList],
+                        'help' => 'Exact times of day, comma separated — for example 08:00, 12:30, 17:00, 20:30. An article is scheduled for the next free one. Leave empty to space posts evenly instead.'],
+                    ['key' => 'publish_max_per_day', 'label' => 'Maximum posts per day', 'input' => 'number', 'rules' => ['required', 'integer', 'min:1', 'max:48'],
+                        'help' => 'Counts posts published by hand too, so the site never exceeds this in a day.'],
+                    ['key' => 'publish_lead_minutes', 'label' => 'Minimum notice', 'input' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:240'],
+                        'help' => 'Never schedule closer than this to now, so a slot is not missed while the article is still being written.'],
+                    ['key' => 'trending_generate_per_run', 'label' => 'Articles per run', 'input' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:20'],
+                        'help' => 'How many articles each hourly run starts. Every one costs an API call.'],
+                    ['key' => 'trending_min_score', 'label' => 'Minimum topic score', 'input' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:100'],
+                        'help' => 'Topics scoring below this are not worth writing about. Lower it if too few articles are being produced.'],
                 ],
             ],
 

@@ -175,6 +175,10 @@ return [
     */
 
     'publishing' => [
+        // Exact times of day, set from Settings -> Publishing. When empty the
+        // window and gap below are used to space posts out instead.
+        'slots' => env('PUBLISH_SLOTS'),
+
         'window_start' => env('PUBLISH_WINDOW_START', '07:00'),
         'window_end' => env('PUBLISH_WINDOW_END', '22:00'),
 

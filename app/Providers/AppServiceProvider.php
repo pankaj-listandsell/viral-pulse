@@ -8,6 +8,7 @@ use App\Services\AI\AiProviderManager;
 use App\Services\Images\BrandCardGenerator;
 use App\Services\Images\Contracts\FeaturedImageGenerator;
 use App\Services\MediaResolver;
+use App\Services\SettingsConfigBridge;
 use App\Services\SettingsService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
@@ -41,6 +42,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Before anything reads config(): the settings screen is only real if
+        // what it stores actually overrides the environment.
+        app(SettingsConfigBridge::class)->apply();
+
         $this->configureModels();
         $this->configureUrls();
         $this->configureRateLimiting();
