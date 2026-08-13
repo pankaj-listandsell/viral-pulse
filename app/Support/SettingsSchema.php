@@ -17,6 +17,11 @@ use Illuminate\Validation\Rule;
  */
 final class SettingsSchema
 {
+    public const PUBLISH_MODES = [
+        'immediate' => 'Write and publish at the time — simplest',
+        'scheduled' => 'Write ahead, publish exactly at the time — safest',
+    ];
+
     private const ROBOTS = [
         'index, follow' => 'index, follow — normal',
         'noindex, follow' => 'noindex, follow — crawl but do not list',
@@ -112,12 +117,16 @@ final class SettingsSchema
                 'label' => 'Publishing',
                 'description' => 'When automatically written articles go live. Times are in the site timezone ('.config('app.timezone').').',
                 'fields' => [
+                    ['key' => 'publish_mode', 'label' => 'How publishing works', 'input' => 'select', 'options' => self::PUBLISH_MODES, 'rules' => ['required', Rule::in(array_keys(self::PUBLISH_MODES))],
+                        'help' => 'Write and publish at the time is simpler and the article is minutes old. Write ahead is safer: if the model fails or the article is rejected, the slot still has something in it.'],
                     ['key' => 'publish_slots', 'label' => 'Publishing times', 'input' => 'text', 'rules' => ['nullable', 'string', 'max:255', new ValidTimeList],
                         'help' => 'Exact times of day, comma separated — for example 08:00, 12:30, 17:00, 20:30. An article is scheduled for the next free one. Leave empty to space posts evenly instead.'],
                     ['key' => 'publish_max_per_day', 'label' => 'Maximum posts per day', 'input' => 'number', 'rules' => ['required', 'integer', 'min:1', 'max:48'],
                         'help' => 'Counts posts published by hand too, so the site never exceeds this in a day.'],
                     ['key' => 'publish_lead_minutes', 'label' => 'Minimum notice', 'input' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:240'],
                         'help' => 'Never schedule closer than this to now, so a slot is not missed while the article is still being written.'],
+                    ['key' => 'publish_lookahead_hours', 'label' => 'Write this far ahead', 'input' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:168'],
+                        'help' => 'Hours. An article is only written once its slot is this close, so trending news is fresh when it publishes rather than a day old. 0 removes the limit.'],
                     ['key' => 'trending_generate_per_run', 'label' => 'Articles per run', 'input' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:20'],
                         'help' => 'How many articles each hourly run starts. Every one costs an API call.'],
                     ['key' => 'trending_min_score', 'label' => 'Minimum topic score', 'input' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:100'],

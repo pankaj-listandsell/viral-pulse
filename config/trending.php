@@ -177,7 +177,17 @@ return [
     'publishing' => [
         // Exact times of day, set from Settings -> Publishing. When empty the
         // window and gap below are used to space posts out instead.
+        // 'immediate' writes the article when its time arrives and publishes it
+        // as soon as it is ready. 'scheduled' writes ahead and publishes exactly
+        // on the minute, which survives a failed generation.
+        'mode' => env('PUBLISH_MODE', 'scheduled'),
+
         'slots' => env('PUBLISH_SLOTS'),
+
+        // How far ahead an article may be written for. Trending content goes
+        // stale fast, so writing tomorrow's posts today produces articles that
+        // are wrong by the time anyone reads them. 0 removes the limit.
+        'max_lookahead_hours' => (int) env('PUBLISH_LOOKAHEAD_HOURS', 3),
 
         'window_start' => env('PUBLISH_WINDOW_START', '07:00'),
         'window_end' => env('PUBLISH_WINDOW_END', '22:00'),

@@ -118,6 +118,8 @@ class ScheduledPublishingTest extends TestCase
             'trending.publishing.gap_minutes' => 60,
             'trending.publishing.max_per_day' => 8,
             'trending.publishing.lead_minutes' => 0,
+            // Not what these two are testing.
+            'trending.publishing.max_lookahead_hours' => 0,
         ]);
 
         // 03:00 is outside the window, so the first slot is the moment it opens.
@@ -174,6 +176,8 @@ class ScheduledPublishingTest extends TestCase
             'trending.publishing.gap_minutes' => 90,
             'trending.publishing.max_per_day' => 8,
             'trending.publishing.lead_minutes' => 0,
+            // Not what these two are testing.
+            'trending.publishing.max_lookahead_hours' => 0,
         ]);
 
         Carbon::setTestNow(today()->setTime(9, 0));
@@ -195,6 +199,8 @@ class ScheduledPublishingTest extends TestCase
             'trending.publishing.gap_minutes' => 60,
             'trending.publishing.max_per_day' => 2,
             'trending.publishing.lead_minutes' => 0,
+            // Not what these two are testing.
+            'trending.publishing.max_lookahead_hours' => 0,
         ]);
 
         Carbon::setTestNow(today()->setTime(9, 0));

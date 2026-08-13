@@ -50,13 +50,69 @@ class PublishWindow
      *
      * @param  array<int, Carbon>  $reserved  slots handed out earlier in this run
      */
+    /**
+     * Whether articles go live the moment they are written rather than being
+     * dated for a slot in the future.
+     */
+    public function publishesImmediately(): bool
+    {
+        return config('trending.publishing.mode', 'scheduled') === 'immediate';
+    }
+
+    /**
+     * Whether one of the configured times has just arrived.
+     *
+     * Immediate mode is driven from the clock rather than from an hourly run,
+     * so this is asked every minute. The tolerance covers a scheduler tick that
+     * lands a few seconds late, which is normal.
+     */
+    public function isSlotTimeNow(int $toleranceMinutes = 1): bool
+    {
+        $times = ValidTimeList::parse((string) config('trending.publishing.slots'));
+
+        if ($times === []) {
+            return false;
+        }
+
+        foreach ($times as $time) {
+            [$hour, $minute] = array_map('intval', explode(':', $time));
+            $slot = today()->setTime($hour, $minute);
+
+            if (now()->between($slot, $slot->copy()->addMinutes($toleranceMinutes))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function nextSlot(array $reserved = []): ?Carbon
     {
         $times = ValidTimeList::parse((string) config('trending.publishing.slots'));
 
-        return $times === []
+        $slot = $times === []
             ? $this->nextEvenlySpacedSlot($reserved)
             : $this->nextNamedSlot($times, $reserved);
+
+        return $slot && $this->tooFarAhead($slot) ? null : $slot;
+    }
+
+    /**
+     * Refuses a slot that is further off than the lookahead allows.
+     *
+     * Without this the hourly run kept working forward into tomorrow and the
+     * day after, so an article about today's market close was written at 12:20
+     * and published twenty hours later, by which time it was simply wrong.
+     * Returning null makes the run do nothing and try again next hour, which
+     * is how the writing ends up happening shortly before the slot it is for.
+     */
+    private function tooFarAhead(Carbon $slot): bool
+    {
+        $hours = (int) config('trending.publishing.max_lookahead_hours', 3);
+
+        // 0 disables the guard, for anyone who genuinely wants a queue built
+        // days in advance - evergreen explainers rather than news.
+        return $hours > 0 && $slot->greaterThan(now()->addHours($hours));
     }
 
     /**

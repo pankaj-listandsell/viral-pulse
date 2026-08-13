@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Trending\PublishWindow;
 use App\Services\Trending\TrendingContentPlanner;
 use Illuminate\Console\Command;
 
@@ -13,8 +14,15 @@ class GenerateTrendingContent extends Command
 
     protected $description = 'Start AI articles for the highest scoring trending topics';
 
-    public function handle(TrendingContentPlanner $planner): int
+    public function handle(TrendingContentPlanner $planner, PublishWindow $window): int
     {
+        // In immediate mode this command is scheduled every minute and does
+        // nothing until one of the configured times arrives, because that time
+        // is when the writing should happen. --force skips the wait.
+        if ($window->publishesImmediately() && ! $this->option('force') && ! $window->isSlotTimeNow()) {
+            return self::SUCCESS;
+        }
+
         // Every run spends money, so it stays off until it is deliberately
         // switched on. --force exists for testing it by hand.
         if (! config('trending.automation.enabled') && ! $this->option('force')) {

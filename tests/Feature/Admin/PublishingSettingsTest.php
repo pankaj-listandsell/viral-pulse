@@ -30,6 +30,14 @@ class PublishingSettingsTest extends TestCase
 
         $this->seed(SettingSeeder::class);
         $this->admin = User::factory()->admin()->create();
+
+        // These tests are about which slot is picked. The lookahead guard is a
+        // separate rule with its own test, so it is switched off here.
+        //
+        // Stored rather than set with config(): the bridge reapplies the stored
+        // settings on every store() call, so a bare config() would be undone by
+        // the next line of the test.
+        $this->store('publish_lookahead_hours', '0');
     }
 
     private function store(string $key, string $value): void
@@ -154,6 +162,8 @@ class PublishingSettingsTest extends TestCase
         $this->actingAs($this->admin)
             ->post(route('admin.settings.update'), [
                 'group' => 'publishing',
+                'publish_mode' => 'scheduled',
+                'publish_lookahead_hours' => 3,
                 'publish_slots' => '07:30, 12:00, 18:45',
                 'publish_max_per_day' => 6,
                 'publish_lead_minutes' => 15,
@@ -174,6 +184,8 @@ class PublishingSettingsTest extends TestCase
             $this->actingAs($this->admin)
                 ->post(route('admin.settings.update'), [
                     'group' => 'publishing',
+                    'publish_mode' => 'scheduled',
+                    'publish_lookahead_hours' => 3,
                     'publish_slots' => $bad,
                     'publish_max_per_day' => 6,
                     'publish_lead_minutes' => 15,

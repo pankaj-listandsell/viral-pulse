@@ -70,6 +70,21 @@ class TrendingContentPlanner
             return ['queued' => 0, 'slots' => [], 'reason' => 'No eligible topics.'];
         }
 
+        // Immediate mode writes the article at the moment its slot arrives and
+        // puts it live as soon as it is ready, with no future date attached.
+        // Simpler to reason about, and the article is minutes old rather than
+        // hours - at the cost of the slot being empty if the model fails.
+        if ($this->window->publishesImmediately()) {
+            $queued = 0;
+
+            foreach ($topics as $topic) {
+                $this->dispatchFor($topic, $author, publishAt: null);
+                $queued++;
+            }
+
+            return ['queued' => $queued, 'slots' => ['as soon as written'], 'reason' => null];
+        }
+
         $slots = $this->window->nextSlots($topics->count());
 
         if ($slots === []) {

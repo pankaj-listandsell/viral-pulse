@@ -25,9 +25,11 @@ class SettingsConfigBridge
         'ai_auto_publish' => 'site.content.auto_publish',
         'ai_auto_generate' => 'trending.automation.enabled',
         'ai_daily_limit' => 'ai.daily_limit',
+        'publish_mode' => 'trending.publishing.mode',
         'publish_slots' => 'trending.publishing.slots',
         'publish_max_per_day' => 'trending.publishing.max_per_day',
         'publish_lead_minutes' => 'trending.publishing.lead_minutes',
+        'publish_lookahead_hours' => 'trending.publishing.max_lookahead_hours',
         'trending_generate_per_run' => 'trending.automation.per_run',
         'trending_min_score' => 'trending.automation.min_score',
     ];

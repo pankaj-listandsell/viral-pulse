@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Trending\PublishWindow;
 use Illuminate\Support\Facades\Schedule;
 
 /*
@@ -41,8 +42,15 @@ Schedule::command('trending:fetch')
 
 // Offset from the fetch so it works on topics that were just ingested rather
 // than racing them. Does nothing unless AUTO_GENERATE_ENABLED is true.
+// Every minute, not hourly: in immediate mode the command has to notice the
+// exact minute one of the configured times arrives. It returns immediately on
+// every other minute, and in scheduled mode it only acts on the hour it would
+// have run anyway.
 Schedule::command('content:generate-trending')
-    ->hourlyAt(20)
+    ->everyMinute()
+    ->when(fn () => app(PublishWindow::class)->publishesImmediately()
+        ? app(PublishWindow::class)->isSlotTimeNow()
+        : now()->minute === 20)
     ->withoutOverlapping(50);
 
 Schedule::command('content:reconcile-counters')

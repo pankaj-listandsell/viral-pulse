@@ -84,9 +84,11 @@ class SettingSeeder extends Seeder
             ['group' => 'features', 'key' => 'show_ai_disclosure', 'value' => '1', 'type' => SettingType::Boolean, 'is_public' => true],
 
             // Publishing. Seeded from the environment for the same reason.
+            ['group' => 'publishing', 'key' => 'publish_mode', 'value' => (string) config('trending.publishing.mode', 'scheduled'), 'type' => SettingType::String],
             ['group' => 'publishing', 'key' => 'publish_slots', 'value' => null, 'type' => SettingType::String],
             ['group' => 'publishing', 'key' => 'publish_max_per_day', 'value' => (string) config('trending.publishing.max_per_day', 8), 'type' => SettingType::Integer],
             ['group' => 'publishing', 'key' => 'publish_lead_minutes', 'value' => (string) config('trending.publishing.lead_minutes', 15), 'type' => SettingType::Integer],
+            ['group' => 'publishing', 'key' => 'publish_lookahead_hours', 'value' => (string) config('trending.publishing.max_lookahead_hours', 3), 'type' => SettingType::Integer],
             ['group' => 'publishing', 'key' => 'trending_generate_per_run', 'value' => (string) config('trending.automation.per_run', 2), 'type' => SettingType::Integer],
             ['group' => 'publishing', 'key' => 'trending_min_score', 'value' => (string) config('trending.automation.min_score', 45), 'type' => SettingType::Integer],
 
