@@ -59,6 +59,14 @@ return [
             'medium' => ['width' => 768, 'height' => 480],
             'large' => ['width' => 1280, 'height' => 720],
         ],
+
+        /*
+         * Draw a branded card for any generated post that has no image of its
+         * own. Costs nothing and gives every article its own share picture,
+         * which is the difference between a link with a thumbnail and one
+         * without in every feed it lands in.
+         */
+        'auto_featured_image' => env('AUTO_FEATURED_IMAGE', true),
     ],
 
     /*

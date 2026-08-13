@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\AI\AiContentService;
 use App\Services\AI\Exceptions\AiGenerationException;
 use App\Services\AI\GenerationRequest;
+use App\Services\Images\FeaturedImageService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Carbon;
@@ -127,8 +128,11 @@ class GenerateAiContentJob implements ShouldQueue
             allowAutoPublish: $this->publishAt === null,
         );
 
+        // Before scheduling, so the card exists by the time the post is public.
+        app(FeaturedImageService::class)->ensure($post);
+
         if ($this->publishAt) {
-            $service->schedulePublication($generation, $post, Carbon::parse($this->publishAt));
+            $service->schedulePublication($generation, $post->refresh(), Carbon::parse($this->publishAt));
         }
 
         $this->linkTopic($request, $post);

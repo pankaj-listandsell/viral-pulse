@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Models\ContactMessage;
 use App\Models\User;
 use App\Services\AI\AiProviderManager;
+use App\Services\Images\BrandCardGenerator;
+use App\Services\Images\Contracts\FeaturedImageGenerator;
 use App\Services\MediaResolver;
 use App\Services\SettingsService;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -30,6 +32,11 @@ class AppServiceProvider extends ServiceProvider
         // Singleton so tests can swap in the fake provider once and have every
         // resolution downstream honour it.
         $this->app->singleton(AiProviderManager::class);
+
+        // The one place that decides how featured images are made. Swapping in
+        // generated photography or a stock-photo service later is a change to
+        // this line and nothing else.
+        $this->app->bind(FeaturedImageGenerator::class, BrandCardGenerator::class);
     }
 
     public function boot(): void
