@@ -163,6 +163,10 @@ final class SettingsSchema
                         'help' => 'Out of 100. At 70 a truncated, too-short or duplicate-titled article is blocked. Below about 60 the gate stops catching the things it exists for.'],
                     ['key' => 'auto_featured_image', 'label' => 'Draw a card for articles with no image', 'input' => 'boolean', 'rules' => ['boolean'],
                         'help' => 'Costs nothing and gives every article its own picture when shared.'],
+                    ['key' => 'media_max_upload_kb', 'label' => 'Maximum upload size', 'input' => 'number', 'rules' => ['required', 'integer', 'min:256', 'max:20480'],
+                        'help' => 'Kilobytes. Your PHP upload_max_filesize is the real ceiling; this cannot raise it, only lower it.'],
+                    ['key' => 'media_webp_enabled', 'label' => 'Convert uploads to WebP', 'input' => 'boolean', 'rules' => ['boolean'],
+                        'help' => 'Smaller files for the same quality, which is one of the things a page-speed score actually measures.'],
                 ],
             ],
 
@@ -172,6 +176,7 @@ final class SettingsSchema
                 'fields' => [
                     ['key' => 'ai_auto_generate', 'label' => 'Write trending topics automatically', 'input' => 'boolean', 'rules' => ['boolean'], 'help' => 'The scheduled run spends money on every pass. Off by default.'],
                     ['key' => 'ai_daily_limit', 'label' => 'Daily generation cap', 'input' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:500'], 'help' => 'A stuck scheduler is the realistic way this runs up a bill. 0 removes the cap.'],
+                    ['key' => 'ai_max_tokens', 'label' => 'Maximum response size', 'input' => 'number', 'rules' => ['required', 'integer', 'min:2000', 'max:64000'], 'help' => 'Tokens. Too low and long articles are cut off mid-sentence, which the quality gate then rejects.'],
                     ['key' => 'ai_timeout', 'label' => 'Request timeout', 'input' => 'number', 'rules' => ['required', 'integer', 'min:30', 'max:600'], 'help' => 'Seconds to wait for the model before giving up.'],
                     ['key' => 'ai_retries', 'label' => 'Retries', 'input' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:5'], 'help' => 'Only rate limits and overloads are retried. A rejected key fails immediately however high this is.'],
                     ['key' => 'analytics_retention_days', 'label' => 'Keep raw view data for', 'input' => 'number', 'rules' => ['required', 'integer', 'min:7', 'max:730'], 'help' => 'Days. Views are rolled into daily totals first, so the charts keep working after the raw rows are pruned.'],

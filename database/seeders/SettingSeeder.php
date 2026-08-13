@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\SettingType;
 use App\Models\Setting;
+use App\Services\SettingsService;
 use Illuminate\Database\Seeder;
 
 class SettingSeeder extends Seeder
@@ -26,6 +27,11 @@ class SettingSeeder extends Seeder
                 ]
             );
         }
+
+        // The settings lookup is cached forever, so without this a newly seeded
+        // row is invisible until something else happens to clear the cache -
+        // and the value it was meant to control keeps using the old default.
+        app(SettingsService::class)->flush();
     }
 
     /**
@@ -100,13 +106,20 @@ class SettingSeeder extends Seeder
             // Quality gate.
             ['group' => 'quality', 'key' => 'content_min_words', 'value' => (string) config('site.content.min_words', 400), 'type' => SettingType::Integer],
             ['group' => 'quality', 'key' => 'content_min_quality_score', 'value' => (string) config('site.content.min_quality_score', 70), 'type' => SettingType::Integer],
+            ['group' => 'quality', 'key' => 'media_max_upload_kb', 'value' => (string) config('site.media.max_upload_kb', 5120), 'type' => SettingType::Integer],
+            ['group' => 'quality', 'key' => 'media_webp_enabled', 'value' => config('site.media.webp', true) ? '1' : '0', 'type' => SettingType::Boolean],
             ['group' => 'quality', 'key' => 'auto_featured_image', 'value' => config('site.media.auto_featured_image', true) ? '1' : '0', 'type' => SettingType::Boolean],
 
             // AI limits and data retention.
+            ['group' => 'ai', 'key' => 'ai_max_tokens', 'value' => (string) config('ai.max_tokens', 16000), 'type' => SettingType::Integer],
             ['group' => 'ai', 'key' => 'ai_timeout', 'value' => (string) config('ai.timeout', 180), 'type' => SettingType::Integer],
             ['group' => 'ai', 'key' => 'ai_retries', 'value' => (string) config('ai.retries', 3), 'type' => SettingType::Integer],
             ['group' => 'ai', 'key' => 'analytics_retention_days', 'value' => (string) config('site.retention.analytics_days', 90), 'type' => SettingType::Integer],
             ['group' => 'ai', 'key' => 'activity_log_retention_days', 'value' => (string) config('site.retention.activity_log_days', 180), 'type' => SettingType::Integer],
+
+            ['group' => 'ai', 'key' => 'ai_provider', 'value' => (string) config('ai.provider', 'gemini'), 'type' => SettingType::String],
+            ['group' => 'ai', 'key' => 'ai_model_gemini', 'value' => (string) config('ai.providers.gemini.model'), 'type' => SettingType::String],
+            ['group' => 'ai', 'key' => 'ai_model_openai', 'value' => (string) config('ai.providers.openai.model'), 'type' => SettingType::String],
 
             // AI. Seeded from the environment rather than hardcoded: these
             // rows override config once set, so a default that disagreed with
