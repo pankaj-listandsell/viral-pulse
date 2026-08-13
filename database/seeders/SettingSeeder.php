@@ -36,16 +36,13 @@ class SettingSeeder extends Seeder
         return [
             // General
             ['group' => 'general', 'key' => 'site_name', 'value' => config('app.name'), 'type' => SettingType::String, 'is_public' => true],
-            ['group' => 'general', 'key' => 'site_tagline', 'value' => 'Trending stories, explained fast.', 'type' => SettingType::String, 'is_public' => true],
             ['group' => 'general', 'key' => 'site_description', 'value' => 'Daily coverage of what India is searching for — trending news, technology, entertainment, sport and clear explainers, published throughout the day.', 'type' => SettingType::Text, 'is_public' => true],
             ['group' => 'general', 'key' => 'site_logo', 'value' => null, 'type' => SettingType::File, 'is_public' => true],
             ['group' => 'general', 'key' => 'site_favicon', 'value' => null, 'type' => SettingType::File, 'is_public' => true],
             ['group' => 'general', 'key' => 'contact_email', 'value' => null, 'type' => SettingType::String, 'is_public' => true],
             ['group' => 'general', 'key' => 'posts_per_page', 'value' => '12', 'type' => SettingType::Integer, 'is_public' => true],
-            ['group' => 'general', 'key' => 'timezone', 'value' => config('app.timezone'), 'type' => SettingType::String],
 
             // SEO
-            ['group' => 'seo', 'key' => 'seo_default_title', 'value' => config('app.name'), 'type' => SettingType::String, 'is_public' => true],
             ['group' => 'seo', 'key' => 'seo_default_description', 'value' => 'Trending stories explained clearly and quickly — news, technology, entertainment and sport, updated through the day as things develop.', 'type' => SettingType::Text, 'is_public' => true],
             ['group' => 'seo', 'key' => 'seo_default_keywords', 'value' => null, 'type' => SettingType::String],
             ['group' => 'seo', 'key' => 'seo_default_og_image', 'value' => null, 'type' => SettingType::File, 'is_public' => true],
@@ -77,8 +74,6 @@ class SettingSeeder extends Seeder
 
             // Features
             ['group' => 'features', 'key' => 'newsletter_enabled', 'value' => '1', 'type' => SettingType::Boolean, 'is_public' => true],
-            ['group' => 'features', 'key' => 'comments_enabled', 'value' => '1', 'type' => SettingType::Boolean, 'is_public' => true],
-            ['group' => 'features', 'key' => 'comments_require_approval', 'value' => '1', 'type' => SettingType::Boolean],
             ['group' => 'features', 'key' => 'likes_enabled', 'value' => '1', 'type' => SettingType::Boolean, 'is_public' => true],
             ['group' => 'features', 'key' => 'search_enabled', 'value' => '1', 'type' => SettingType::Boolean, 'is_public' => true],
             ['group' => 'features', 'key' => 'show_ai_disclosure', 'value' => '1', 'type' => SettingType::Boolean, 'is_public' => true],
@@ -92,13 +87,32 @@ class SettingSeeder extends Seeder
             ['group' => 'publishing', 'key' => 'trending_generate_per_run', 'value' => (string) config('trending.automation.per_run', 2), 'type' => SettingType::Integer],
             ['group' => 'publishing', 'key' => 'trending_min_score', 'value' => (string) config('trending.automation.min_score', 45), 'type' => SettingType::Integer],
 
+            // Trending sources. Seeded from the environment so a fresh install
+            // behaves exactly as its .env says, and the admin owns them after that.
+            ['group' => 'trending', 'key' => 'trending_google_trends', 'value' => config('trending.sources.google_trends.enabled') ? '1' : '0', 'type' => SettingType::Boolean],
+            ['group' => 'trending', 'key' => 'trending_google_news', 'value' => config('trending.sources.google_news.enabled') ? '1' : '0', 'type' => SettingType::Boolean],
+            ['group' => 'trending', 'key' => 'trending_region', 'value' => (string) config('trending.region', 'IN'), 'type' => SettingType::String],
+            ['group' => 'trending', 'key' => 'trending_language', 'value' => (string) config('trending.language', 'en'), 'type' => SettingType::String],
+            ['group' => 'trending', 'key' => 'trending_rss_feeds', 'value' => implode(PHP_EOL, (array) config('trending.custom_feeds', [])) ?: null, 'type' => SettingType::Text],
+            ['group' => 'trending', 'key' => 'trending_max_age_hours', 'value' => (string) config('trending.automation.max_age_hours', 36), 'type' => SettingType::Integer],
+            ['group' => 'trending', 'key' => 'trending_target_words', 'value' => (string) config('trending.automation.target_words', 900), 'type' => SettingType::Integer],
+
+            // Quality gate.
+            ['group' => 'quality', 'key' => 'content_min_words', 'value' => (string) config('site.content.min_words', 400), 'type' => SettingType::Integer],
+            ['group' => 'quality', 'key' => 'content_min_quality_score', 'value' => (string) config('site.content.min_quality_score', 70), 'type' => SettingType::Integer],
+            ['group' => 'quality', 'key' => 'auto_featured_image', 'value' => config('site.media.auto_featured_image', true) ? '1' : '0', 'type' => SettingType::Boolean],
+
+            // AI limits and data retention.
+            ['group' => 'ai', 'key' => 'ai_timeout', 'value' => (string) config('ai.timeout', 180), 'type' => SettingType::Integer],
+            ['group' => 'ai', 'key' => 'ai_retries', 'value' => (string) config('ai.retries', 3), 'type' => SettingType::Integer],
+            ['group' => 'ai', 'key' => 'analytics_retention_days', 'value' => (string) config('site.retention.analytics_days', 90), 'type' => SettingType::Integer],
+            ['group' => 'ai', 'key' => 'activity_log_retention_days', 'value' => (string) config('site.retention.activity_log_days', 180), 'type' => SettingType::Integer],
+
             // AI. Seeded from the environment rather than hardcoded: these
             // rows override config once set, so a default that disagreed with
             // .env would silently undo whatever the environment asked for.
             ['group' => 'ai', 'key' => 'ai_auto_publish', 'value' => config('site.content.auto_publish') ? '1' : '0', 'type' => SettingType::Boolean],
             ['group' => 'ai', 'key' => 'ai_auto_generate', 'value' => config('trending.automation.enabled') ? '1' : '0', 'type' => SettingType::Boolean],
-            ['group' => 'ai', 'key' => 'ai_default_language', 'value' => 'en', 'type' => SettingType::String],
-            ['group' => 'ai', 'key' => 'ai_default_tone', 'value' => 'informative', 'type' => SettingType::String],
             ['group' => 'ai', 'key' => 'ai_daily_limit', 'value' => (string) config('ai.daily_limit', 50), 'type' => SettingType::Integer],
         ];
     }

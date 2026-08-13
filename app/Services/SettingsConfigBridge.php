@@ -32,6 +32,19 @@ class SettingsConfigBridge
         'publish_lookahead_hours' => 'trending.publishing.max_lookahead_hours',
         'trending_generate_per_run' => 'trending.automation.per_run',
         'trending_min_score' => 'trending.automation.min_score',
+        'trending_max_age_hours' => 'trending.automation.max_age_hours',
+        'trending_target_words' => 'trending.automation.target_words',
+        'trending_region' => 'trending.region',
+        'trending_language' => 'trending.language',
+        'trending_google_trends' => 'trending.sources.google_trends.enabled',
+        'trending_google_news' => 'trending.sources.google_news.enabled',
+        'content_min_words' => 'site.content.min_words',
+        'content_min_quality_score' => 'site.content.min_quality_score',
+        'auto_featured_image' => 'site.media.auto_featured_image',
+        'ai_timeout' => 'ai.timeout',
+        'ai_retries' => 'ai.retries',
+        'analytics_retention_days' => 'site.retention.analytics_days',
+        'activity_log_retention_days' => 'site.retention.activity_log_days',
     ];
 
     public function __construct(private readonly SettingsService $settings) {}
@@ -65,5 +78,26 @@ class SettingsConfigBridge
 
             config([$key => $value]);
         }
+
+        // Not in MAP: this one is typed as text but config holds a list.
+        $this->applyCustomFeeds($stored['trending_rss_feeds'] ?? null);
+    }
+
+    /**
+     * Extra feeds are typed one per line, which is far easier to read and edit
+     * than the comma-separated string the environment variable used.
+     */
+    private function applyCustomFeeds(?string $value): void
+    {
+        if ($value === null || trim($value) === '') {
+            return;
+        }
+
+        $feeds = array_values(array_filter(array_map(
+            'trim',
+            preg_split('/[\r\n,]+/', $value) ?: []
+        )));
+
+        config(['trending.custom_feeds' => $feeds]);
     }
 }

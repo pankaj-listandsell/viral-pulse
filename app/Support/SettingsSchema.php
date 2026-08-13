@@ -134,12 +134,48 @@ final class SettingsSchema
                 ],
             ],
 
+            'trending' => [
+                'label' => 'Trending',
+                'description' => 'Where topics come from and which ones are worth writing about. Published feeds and official APIs only — nothing here scrapes a website.',
+                'fields' => [
+                    ['key' => 'trending_google_trends', 'label' => 'Google Trends', 'input' => 'boolean', 'rules' => ['boolean'],
+                        'help' => 'What people are actually searching for. The best demand signal available, and it needs no key.'],
+                    ['key' => 'trending_google_news', 'label' => 'Google News', 'input' => 'boolean', 'rules' => ['boolean']],
+                    ['key' => 'trending_region', 'label' => 'Region', 'input' => 'text', 'rules' => ['required', 'string', 'size:2', 'regex:/^[A-Za-z]{2}$/'],
+                        'help' => 'Two-letter country code — IN for India, US, GB. Decides which country’s trends are pulled.'],
+                    ['key' => 'trending_language', 'label' => 'Language', 'input' => 'text', 'rules' => ['required', 'string', 'size:2', 'regex:/^[a-z]{2}$/']],
+                    ['key' => 'trending_rss_feeds', 'label' => 'Extra RSS feeds', 'input' => 'textarea', 'rules' => ['nullable', 'string', 'max:2000'],
+                        'help' => 'One URL per line. Add |category-slug to pin a feed to a section, for example https://example.com/feed.xml|technology'],
+                    ['key' => 'trending_max_age_hours', 'label' => 'Ignore topics older than', 'input' => 'number', 'rules' => ['required', 'integer', 'min:1', 'max:336'],
+                        'help' => 'Hours. A stale topic is already covered everywhere else, so writing about it ranks nowhere.'],
+                    ['key' => 'trending_target_words', 'label' => 'Target article length', 'input' => 'number', 'rules' => ['required', 'integer', 'min:200', 'max:3000'],
+                        'help' => 'Words. What the model is asked for, not what it is guaranteed to produce.'],
+                ],
+            ],
+
+            'quality' => [
+                'label' => 'Quality',
+                'description' => 'The gate between the model and the site. An article that fails it stays a draft no matter what the publishing settings say.',
+                'fields' => [
+                    ['key' => 'content_min_words', 'label' => 'Minimum words', 'input' => 'number', 'rules' => ['required', 'integer', 'min:100', 'max:3000'],
+                        'help' => 'Anything shorter loses 40 points, which on its own is usually enough to fail.'],
+                    ['key' => 'content_min_quality_score', 'label' => 'Minimum quality score', 'input' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:100'],
+                        'help' => 'Out of 100. At 70 a truncated, too-short or duplicate-titled article is blocked. Below about 60 the gate stops catching the things it exists for.'],
+                    ['key' => 'auto_featured_image', 'label' => 'Draw a card for articles with no image', 'input' => 'boolean', 'rules' => ['boolean'],
+                        'help' => 'Costs nothing and gives every article its own picture when shared.'],
+                ],
+            ],
+
             'ai' => [
                 'label' => 'AI',
                 'description' => 'How much the generator is allowed to do on its own. The provider, the model and the API key live elsewhere.',
                 'fields' => [
                     ['key' => 'ai_auto_generate', 'label' => 'Write trending topics automatically', 'input' => 'boolean', 'rules' => ['boolean'], 'help' => 'The scheduled run spends money on every pass. Off by default.'],
                     ['key' => 'ai_daily_limit', 'label' => 'Daily generation cap', 'input' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:500'], 'help' => 'A stuck scheduler is the realistic way this runs up a bill. 0 removes the cap.'],
+                    ['key' => 'ai_timeout', 'label' => 'Request timeout', 'input' => 'number', 'rules' => ['required', 'integer', 'min:30', 'max:600'], 'help' => 'Seconds to wait for the model before giving up.'],
+                    ['key' => 'ai_retries', 'label' => 'Retries', 'input' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:5'], 'help' => 'Only rate limits and overloads are retried. A rejected key fails immediately however high this is.'],
+                    ['key' => 'analytics_retention_days', 'label' => 'Keep raw view data for', 'input' => 'number', 'rules' => ['required', 'integer', 'min:7', 'max:730'], 'help' => 'Days. Views are rolled into daily totals first, so the charts keep working after the raw rows are pruned.'],
+                    ['key' => 'activity_log_retention_days', 'label' => 'Keep the activity log for', 'input' => 'number', 'rules' => ['required', 'integer', 'min:7', 'max:730'], 'help' => 'Days.'],
                     ['key' => 'ai_default_language', 'label' => 'Default language', 'input' => 'select', 'options' => ['en' => 'English', 'hi' => 'Hindi'], 'rules' => ['required', 'in:en,hi']],
                     ['key' => 'ai_default_tone', 'label' => 'Default tone', 'input' => 'select', 'options' => self::tones(), 'rules' => ['required', Rule::in(array_column(ContentTone::cases(), 'value'))]],
                 ],
