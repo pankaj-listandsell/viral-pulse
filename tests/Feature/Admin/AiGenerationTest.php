@@ -408,6 +408,21 @@ class AiGenerationTest extends TestCase
         $this->assertSame(2.80, $result->estimatedCost());
     }
 
+    public function test_a_model_with_no_configured_price_reports_no_cost(): void
+    {
+        // Null, not 0.0. The admin renders null as "—"; a zero would print
+        // "$0.0000" and read as "this call was free".
+        $result = new GenerationResult(
+            title: 't', slug: 's', excerpt: 'e', content: 'c',
+            seoTitle: 't', seoDescription: 'd', seoKeywords: 'k',
+            tags: [], imagePrompt: null,
+            provider: 'gemini', model: 'a-model-nobody-priced',
+            promptTokens: 1000, completionTokens: 1000, durationMs: 1,
+        );
+
+        $this->assertNull($result->estimatedCost());
+    }
+
     public function test_an_overlong_meta_description_is_trimmed_at_a_word_boundary(): void
     {
         $this->provider->willReturn([

@@ -38,8 +38,12 @@ final readonly class GenerationResult
     /**
      * Indicative cost from the configured price table - the provider's own
      * billing is authoritative.
+     *
+     * Null when the model has no price configured, which the admin renders as
+     * "—". Returning 0.0 there would print "$0.0000" and read as "this call was
+     * free", which is a worse lie than admitting the price is not known.
      */
-    public function estimatedCost(): float
+    public function estimatedCost(): ?float
     {
         // Indexed, not dot-notated: config() splits on dots, and model ids
         // contain them ("gemini-2.5-flash" would resolve as ai.pricing.gemini-2
@@ -47,7 +51,7 @@ final readonly class GenerationResult
         $pricing = config('ai.pricing')[$this->model] ?? null;
 
         if (! $pricing) {
-            return 0.0;
+            return null;
         }
 
         return round(

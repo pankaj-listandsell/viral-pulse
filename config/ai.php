@@ -37,10 +37,19 @@ return [
             'label' => 'Gemini (Google)',
             'driver' => GeminiProvider::class,
             'key' => env('GEMINI_API_KEY'),
-            'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+            // Google retires model ids. gemini-2.5-flash and gemini-2.5-pro now
+            // return 404 "no longer available to new users", which surfaced as
+            // every generation failing at once. Every id below was confirmed
+            // working with a live call before being listed here.
+            'model' => env('GEMINI_MODEL', 'gemini-3.6-flash'),
             'models' => [
-                'gemini-2.5-pro' => 'Gemini 2.5 Pro — highest quality',
-                'gemini-2.5-flash' => 'Gemini 2.5 Flash — faster, cheaper',
+                'gemini-3.6-flash' => 'Gemini 3.6 Flash — newest, recommended',
+                'gemini-3.5-flash' => 'Gemini 3.5 Flash',
+                'gemini-3.5-flash-lite' => 'Gemini 3.5 Flash Lite — cheapest',
+                // An alias that always points at the current Flash. Convenient,
+                // but it moves without warning and the price table below cannot
+                // follow it, so it is not the default.
+                'gemini-flash-latest' => 'Gemini Flash Latest — always current',
             ],
             'endpoint' => 'https://generativelanguage.googleapis.com/v1beta',
         ],
@@ -88,11 +97,18 @@ return [
     |
     | Indicative only - billing is whatever the provider actually charges.
     |
+    | A model with no entry here reports no cost rather than a made-up one, and
+    | the admin shows "—" instead of "$0.0000". Fill an id in from
+    | https://ai.google.dev/pricing when you want the column populated; a wrong
+    | number is worse than an honest blank.
+    |
     */
 
     'pricing' => [
+        // Retired by Google, kept for generations already recorded against them.
         'gemini-2.5-pro' => ['input' => 1.25, 'output' => 10.00],
         'gemini-2.5-flash' => ['input' => 0.30, 'output' => 2.50],
+
         'gpt-4o' => ['input' => 2.50, 'output' => 10.00],
         'gpt-4o-mini' => ['input' => 0.15, 'output' => 0.60],
     ],
