@@ -36,6 +36,7 @@ Route::get('categories', [ArchiveController::class, 'categories'])->name('catego
 Route::get('category/{category}', [ArchiveController::class, 'category'])->name('categories.show');
 Route::get('tag/{tag}', [ArchiveController::class, 'tag'])->name('tags.show');
 
+Route::get('search/live', [SearchController::class, 'live'])->name('search.live');
 Route::get('search', SearchController::class)->middleware('throttle:search')->name('search');
 
 Route::get('contact', [PageController::class, 'contact'])->name('contact');
@@ -72,6 +73,16 @@ Route::get('newsletter/unsubscribe/{token}', [NewsletterController::class, 'unsu
 Route::post('post/{post}/like', [LikeController::class, 'toggle'])
     ->middleware('throttle:60,1')
     ->name('posts.like');
+
+Route::get('post/{post}/reactions', [\App\Http\Controllers\Public\ReactionController::class, 'index'])->name('posts.reactions.index');
+Route::post('post/{post}/react', [\App\Http\Controllers\Public\ReactionController::class, 'toggle'])
+    ->middleware('throttle:60,1')
+    ->name('posts.react');
+
+Route::get('post/{post}/poll', [\App\Http\Controllers\Public\PollController::class, 'index'])->name('posts.poll.index');
+Route::post('post/{post}/poll/vote', [\App\Http\Controllers\Public\PollController::class, 'vote'])
+    ->middleware('throttle:30,1')
+    ->name('posts.poll.vote');
 
 // Static pages are matched last so they cannot shadow a real route.
 Route::get('page/{page}', [PageController::class, 'show'])->name('pages.show');

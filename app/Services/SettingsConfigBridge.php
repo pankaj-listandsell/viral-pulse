@@ -22,6 +22,7 @@ class SettingsConfigBridge
      * @var array<string, string>
      */
     private const MAP = [
+        'timezone' => 'app.timezone',
         'ai_auto_publish' => 'site.content.auto_publish',
         'ai_auto_generate' => 'trending.automation.enabled',
         'ai_daily_limit' => 'ai.daily_limit',

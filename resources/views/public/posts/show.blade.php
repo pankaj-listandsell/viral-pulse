@@ -69,6 +69,9 @@
                         </span>
 
                         <span class="ml-auto flex items-center gap-2">
+                            <span data-island="BookmarkButton" data-island-eager
+                                  data-props="{{ json_encode(['post' => ['id' => $post->id, 'title' => $post->title, 'slug' => $post->slug, 'category' => $post->category?->name, 'url' => route('posts.show', $post)]]) }}"></span>
+
                             @if($settings->bool('likes_enabled', true))
                                 <span data-island="LikeButton" data-props="{{ json_encode($likeProps) }}">
                                     <span class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-500 dark:border-gray-800">
@@ -85,12 +88,9 @@
                         </span>
                     </div>
 
-                    @if($post->ai_generated && $settings->bool('show_ai_disclosure', true))
-                        <p class="mt-4 flex items-start gap-2 rounded-lg bg-violet-50 px-3 py-2.5 text-sm text-violet-900 dark:bg-violet-500/10 dark:text-violet-200">
-                            <x-icon name="bot" class="mt-0.5 size-4 shrink-0" />
-                            <span>This article was drafted with AI assistance and reviewed before publishing.</span>
-                        </p>
-                    @endif
+                    {{-- Listen to Article Audio Player --}}
+                    <div data-island="AudioReader" data-island-eager
+                         data-props="{{ json_encode(['title' => $post->title]) }}"></div>
                 </header>
 
                 @if($post->featured_image)
@@ -104,6 +104,20 @@
                         @endif
                     </figure>
                 @endif
+
+                {{-- Table of Contents (Dynamically Populated when article has 2+ headings) --}}
+                <div id="article-toc" class="my-8 hidden rounded-2xl border border-gray-200/80 bg-gray-50/70 p-5 dark:border-gray-800 dark:bg-gray-900/40">
+                    <div class="flex items-center justify-between cursor-pointer select-none" id="toc-toggle">
+                        <div class="flex items-center gap-2 font-bold text-sm text-gray-900 dark:text-white">
+                            <span class="text-base">📑</span>
+                            <span>In this article (Table of Contents)</span>
+                        </div>
+                        <svg id="toc-chevron" class="size-4 text-gray-400 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
+                    <nav id="toc-list" class="mt-4 border-t border-gray-200/60 pt-3 text-sm text-gray-600 dark:border-gray-800 dark:text-gray-300 space-y-2">
+                        <!-- Populated by JavaScript -->
+                    </nav>
+                </div>
 
                 {{-- Already sanitised on write, so it is safe to render as HTML.
                      Nothing untrusted reaches this point. --}}
@@ -124,6 +138,14 @@
                         @endforeach
                     </div>
                 @endif
+
+                {{-- Interactive Emoji Reaction Bar --}}
+                <div data-island="ReactionsBar" data-island-eager
+                     data-props="{{ json_encode(['postId' => $post->id]) }}"></div>
+
+                {{-- Community Pulse Quick Poll --}}
+                <div data-island="ArticlePoll" data-island-eager
+                     data-props="{{ json_encode(['postId' => $post->id, 'title' => $post->title]) }}"></div>
 
                 <div class="mt-8 border-t border-gray-200 pt-6 dark:border-gray-800"
                      data-island="ShareBar" data-props="{{ json_encode($shareProps) }}">
@@ -188,4 +210,9 @@
             </aside>
         </div>
     </div>
+
+    @if($nextStory = ($related->first() ?? $popular->first()))
+        <div data-island="UpNextToast"
+             data-props="{{ json_encode(['post' => ['title' => $nextStory->title, 'url' => route('posts.show', $nextStory), 'reading_time' => $nextStory->reading_time]]) }}"></div>
+    @endif
 @endsection

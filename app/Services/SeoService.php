@@ -30,6 +30,20 @@ class SeoService
      */
     public function forPost(Post $post): array
     {
+        $faqs = $this->extractFaqs($post->content);
+        $schemas = [
+            $this->articleSchema($post),
+            $this->breadcrumbSchema([
+                ['name' => 'Home', 'url' => route('home')],
+                ['name' => $post->category->name, 'url' => route('categories.show', $post->category)],
+                ['name' => $post->title, 'url' => route('posts.show', $post)],
+            ]),
+        ];
+
+        if ($faqSchema = $this->faqSchema($faqs)) {
+            $schemas[] = $faqSchema;
+        }
+
         return [
             'title' => $post->seo_title ?: $post->title,
             'description' => $this->description($post->seo_description ?: strip_tags($post->excerpt ?: $post->content)),
@@ -42,14 +56,7 @@ class SeoService
             'published_at' => $post->published_at,
             'modified_at' => $post->updated_at,
             'author' => $post->author?->name,
-            'schemas' => [
-                $this->articleSchema($post),
-                $this->breadcrumbSchema([
-                    ['name' => 'Home', 'url' => route('home')],
-                    ['name' => $post->category->name, 'url' => route('categories.show', $post->category)],
-                    ['name' => $post->title, 'url' => route('posts.show', $post)],
-                ]),
-            ],
+            'schemas' => $schemas,
         ];
     }
 
@@ -232,6 +239,64 @@ class SeoService
             'name' => $name,
             'numberOfItems' => count($elements),
             'itemListElement' => $elements,
+        ];
+    }
+
+    /**
+     * Extracts questions and answers from article content for FAQ Schema.
+     *
+     * @return array<int, array{question: string, answer: string}>
+     */
+    public function extractFaqs(string $content): array
+    {
+        $faqs = [];
+
+        // Match <details><summary>(Question)</summary>(Answer)</details>
+        if (preg_match_all('/<details[^>]*>\s*<summary[^>]*>(.*?)<\/summary>(.*?)<\/details>/is', $content, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $m) {
+                $q = trim(strip_tags($m[1]));
+                $a = trim(strip_tags($m[2]));
+                if ($q && $a) {
+                    $faqs[] = ['question' => $q, 'answer' => $a];
+                }
+            }
+        }
+
+        // Match <h3>(Question?)</h3> <p>(Answer)</p>
+        if (empty($faqs) && preg_match_all('/<h[34][^>]*>(.*?\?)<\/h[34]>\s*<p>(.*?)<\/p>/is', $content, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $m) {
+                $q = trim(strip_tags($m[1]));
+                $a = trim(strip_tags($m[2]));
+                if ($q && $a) {
+                    $faqs[] = ['question' => $q, 'answer' => $a];
+                }
+            }
+        }
+
+        return $faqs;
+    }
+
+    /**
+     * @param array<int, array{question: string, answer: string}> $faqs
+     * @return array<string, mixed>|null
+     */
+    public function faqSchema(array $faqs): ?array
+    {
+        if (empty($faqs)) {
+            return null;
+        }
+
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'FAQPage',
+            'mainEntity' => array_map(fn ($faq) => [
+                '@type' => 'Question',
+                'name' => $faq['question'],
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => $faq['answer'],
+                ],
+            ], $faqs),
         ];
     }
 

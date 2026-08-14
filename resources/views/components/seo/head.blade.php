@@ -31,6 +31,9 @@
 @endif
 
 <meta name="robots" content="{{ $robots }}">
+@if(!str_contains($robots, 'noindex'))
+    <meta name="googlebot" content="max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+@endif
 <link rel="canonical" href="{{ $canonical }}">
 
 <x-seo.favicon :siteSettings="$settings->public()" />

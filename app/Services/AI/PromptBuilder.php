@@ -63,7 +63,14 @@ class PromptBuilder
             $lines[] = "Audience: {$request->audience}";
         }
 
+        // A bare "about N words" is treated as decoration by smaller models,
+        // which stop at a third of it and then fail the word-count gate. The
+        // floor sits above the gate's minimum so a slight undershoot still
+        // passes validation.
+        $floor = min($request->targetWords, (int) config('site.content.min_words', 400) + 100);
+
         $lines[] = "Target length: about {$request->targetWords} words.";
+        $lines[] = "The article body must be at least {$floor} words. Shorter drafts fail an automated word-count check and are discarded, so if the topic feels thin, go deeper - background, context, reactions, what happens next - rather than stopping early.";
         $lines[] = '';
         $lines[] = "Shape: {$request->contentType->guidance()}";
         $lines[] = "Tone: {$request->tone->guidance()}";

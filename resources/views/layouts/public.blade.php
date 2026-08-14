@@ -11,10 +11,23 @@
     <x-seo.head :seo="$seo ?? []" />
 
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.bunny.net/css?family=outfit:300,400,500,600,700|instrument-sans:400,500,600,700&display=swap" rel="stylesheet">
 
     <link rel="alternate" type="application/rss+xml"
           title="{{ $siteSettings['site_name'] ?? config('app.name') }}" href="{{ url('feed.xml') }}">
+
+    {{-- Applied before first paint so the page never flashes or loses dark theme on refresh --}}
+    <script>
+        (function () {
+            const stored = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (stored === 'dark' || (!stored && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            } else if (stored === 'light') {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
 
     @if($analyticsId = ($siteSettings['google_analytics_id'] ?? null))
         <script async src="https://www.googletagmanager.com/gtag/js?id={{ $analyticsId }}"></script>
@@ -44,12 +57,15 @@
 </a>
 
 @include('public.partials.header', ['nav' => $nav])
+@include('public.partials.breaking-ticker')
 
 <main id="main" class="flex-1">
     @yield('content')
 </main>
 
 @include('public.partials.footer', ['nav' => $nav])
+
+<div data-island="PushNotificationPrompt"></div>
 
 </body>
 </html>

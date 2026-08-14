@@ -197,4 +197,55 @@ class EngagementTest extends TestCase
         $this->assertSame(0, PostView::count());
         $this->assertSame(0, $post->fresh()->views_count);
     }
+
+    public function test_reacting_to_a_post_stores_and_counts_in_database(): void
+    {
+        $post = Post::factory()->create();
+
+        // Add reaction 'fire'
+        $response = $this->postJson(route('posts.react', $post), ['reaction' => 'fire'])
+            ->assertOk()
+            ->json();
+
+        $this->assertSame('fire', $response['userReaction']);
+        $this->assertSame(1, $response['reactions']['fire']);
+        $this->assertDatabaseHas('post_reactions', [
+            'post_id' => $post->id,
+            'reaction' => 'fire',
+        ]);
+
+        // Switching to 'love' updates the reaction
+        $response2 = $this->postJson(route('posts.react', $post), ['reaction' => 'love'])
+            ->assertOk()
+            ->json();
+
+        $this->assertSame('love', $response2['userReaction']);
+        $this->assertSame(0, $response2['reactions']['fire']);
+        $this->assertSame(1, $response2['reactions']['love']);
+
+        // Clicking 'love' again removes it (toggle)
+        $response3 = $this->postJson(route('posts.react', $post), ['reaction' => 'love'])
+            ->assertOk()
+            ->json();
+
+        $this->assertNull($response3['userReaction']);
+        $this->assertSame(0, $response3['reactions']['love']);
+    }
+
+    public function test_voting_on_a_poll_stores_in_database_and_calculates_percentages(): void
+    {
+        $post = Post::factory()->create();
+
+        $response = $this->postJson(route('posts.poll.vote', $post), ['option' => 'yes'])
+            ->assertOk()
+            ->json();
+
+        $this->assertSame('yes', $response['userVote']);
+        $this->assertSame(1, $response['total']);
+        $this->assertSame(100, $response['options'][0]['percent']);
+        $this->assertDatabaseHas('post_polls', [
+            'post_id' => $post->id,
+            'option' => 'yes',
+        ]);
+    }
 }

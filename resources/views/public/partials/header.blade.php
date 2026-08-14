@@ -52,6 +52,8 @@
                 </form>
             </div>
 
+            <div data-island="SavedStoriesDrawer" data-island-eager></div>
+
             <button
                 type="button"
                 data-theme-toggle

@@ -17,8 +17,11 @@ class HomeController extends Controller
 
     public function index(): View
     {
+        $heroSlides = $this->feed->heroSlides(5);
+
         return view('public.home', [
-            'hero' => $this->feed->hero(),
+            'heroSlides' => $heroSlides,
+            'hero' => $heroSlides->first() ?? $this->feed->hero(),
             'latest' => $this->feed->latest(9),
             'trending' => $this->feed->trending(5),
             'featured' => $this->feed->featured(4),

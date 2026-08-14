@@ -80,6 +80,20 @@ class ContentFeedService
     /**
      * @return Collection<int, Post>
      */
+    public function heroSlides(int $limit = 5): Collection
+    {
+        return $this->withImages(
+            Cache::remember("feed.hero_slides.{$limit}", self::TTL, fn () => $this->base()
+                ->orderByDesc('is_featured')
+                ->orderByDesc('published_at')
+                ->limit($limit)
+                ->get())
+        );
+    }
+
+    /**
+     * @return Collection<int, Post>
+     */
     public function latest(int $limit = 9, ?int $excludeId = null): Collection
     {
         return $this->withImages(
@@ -219,6 +233,7 @@ class ContentFeedService
 
         // The keyed variants are cheap to enumerate and there are only a few.
         foreach ([4, 5, 6, 8, 9, 10, 12] as $limit) {
+            Cache::forget("feed.hero_slides.{$limit}");
             Cache::forget("feed.trending.{$limit}");
             Cache::forget("feed.featured.{$limit}");
             Cache::forget("feed.popular.{$limit}");

@@ -41,6 +41,7 @@ class SettingSeeder extends Seeder
     {
         return [
             // General
+            ['group' => 'general', 'key' => 'timezone', 'value' => 'Asia/Kolkata', 'type' => SettingType::String, 'is_public' => true],
             ['group' => 'general', 'key' => 'site_name', 'value' => config('app.name'), 'type' => SettingType::String, 'is_public' => true],
             ['group' => 'general', 'key' => 'site_description', 'value' => 'Daily coverage of what India is searching for — trending news, technology, entertainment, sport and clear explainers, published throughout the day.', 'type' => SettingType::Text, 'is_public' => true],
             ['group' => 'general', 'key' => 'site_logo', 'value' => null, 'type' => SettingType::File, 'is_public' => true],
