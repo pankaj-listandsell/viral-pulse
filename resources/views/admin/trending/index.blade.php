@@ -29,23 +29,34 @@
             <x-ui.card :padded="false">
                 <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-4 dark:border-gray-800">
                     <form method="GET" class="flex flex-wrap items-center gap-2">
-                        <x-ui.input name="q" value="{{ $filters['q'] }}" placeholder="Search topics" class="w-48" />
+                        <div class="w-full sm:w-48">
+                            <x-ui.input name="q" value="{{ $filters['q'] }}" placeholder="Search topics..." class="w-full text-xs" />
+                        </div>
 
-                        <x-ui.select name="status" class="w-36" onchange="this.form.submit()">
-                            <option value="">Any status</option>
-                            @foreach($statuses as $status)
-                                <option value="{{ $status->value }}" @selected($filters['status'] === $status->value)>{{ $status->label() }}</option>
-                            @endforeach
-                        </x-ui.select>
+                        <div class="w-full sm:w-36">
+                            <x-ui.select name="status" class="w-full text-xs" onchange="this.form.submit()">
+                                <option value="">Status: All</option>
+                                @foreach($statuses as $status)
+                                    <option value="{{ $status->value }}" @selected($filters['status'] === $status->value)>{{ $status->label() }}</option>
+                                @endforeach
+                            </x-ui.select>
+                        </div>
 
-                        <x-ui.select name="source" class="w-40" onchange="this.form.submit()">
-                            <option value="">Any source</option>
-                            @foreach($sources as $source)
-                                <option value="{{ $source->value }}" @selected($filters['source'] === $source->value)>{{ $source->label() }}</option>
-                            @endforeach
-                        </x-ui.select>
+                        <div class="w-full sm:w-40">
+                            <x-ui.select name="source" class="w-full text-xs" onchange="this.form.submit()">
+                                <option value="">Source: All</option>
+                                @foreach($sources as $source)
+                                    <option value="{{ $source->value }}" @selected($filters['source'] === $source->value)>{{ $source->label() }}</option>
+                                @endforeach
+                            </x-ui.select>
+                        </div>
 
-                        <x-ui.button type="submit" variant="secondary" size="sm">Filter</x-ui.button>
+                        @if(array_filter($filters))
+                            <a href="{{ route('admin.trending.index') }}" class="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                <x-icon name="x" class="size-3" />
+                                Reset
+                            </a>
+                        @endif
                     </form>
 
                     <div class="flex items-center gap-2">

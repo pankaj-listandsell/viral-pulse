@@ -23,10 +23,31 @@ const selectedOption = ref(null);
 const totalVotes = ref(0);
 const busy = ref(false);
 
+const storageKey = computed(() => `poll_vote_${props.postId}`);
+
+function calculatePercents() {
+    const total = totalVotes.value;
+    options.value = options.value.map(opt => ({
+        ...opt,
+        percent: total > 0 ? Math.round((opt.count / total) * 100) : 0,
+    }));
+}
+
 async function loadPoll() {
+    // Check localStorage first for instant display
+    try {
+        const localSaved = localStorage.getItem(storageKey.value);
+        if (localSaved) {
+            selectedOption.value = localSaved;
+        }
+    } catch {
+        // Ignore localStorage errors
+    }
+
     try {
         const res = await fetch(`/post/${props.postId}/poll`, {
-            headers: { Accept: 'application/json' }
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
         });
         if (res.ok) {
             const data = await res.json();
@@ -34,7 +55,12 @@ async function loadPoll() {
             if (data.options) {
                 options.value = data.options;
             }
-            selectedOption.value = data.userVote || null;
+            if (data.userVote) {
+                selectedOption.value = data.userVote;
+                try {
+                    localStorage.setItem(storageKey.value, data.userVote);
+                } catch {}
+            }
         }
     } catch {
         // Fallback
@@ -45,14 +71,35 @@ async function vote(optionId) {
     if (selectedOption.value || busy.value) return;
     busy.value = true;
 
+    // Instant Optimistic UI Update
+    selectedOption.value = optionId;
+    totalVotes.value++;
+    options.value = options.value.map(opt => {
+        if (opt.id === optionId) {
+            return { ...opt, count: opt.count + 1 };
+        }
+        return opt;
+    });
+    calculatePercents();
+
     try {
+        localStorage.setItem(storageKey.value, optionId);
+    } catch {}
+
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            || document.querySelector('input[name="_token"]')?.value
+            || '';
+
         const res = await fetch(`/post/${props.postId}/poll/vote`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken,
             },
+            credentials: 'same-origin',
             body: JSON.stringify({ option: optionId }),
         });
 
@@ -62,10 +109,12 @@ async function vote(optionId) {
             if (data.options) {
                 options.value = data.options;
             }
-            selectedOption.value = data.userVote;
+            if (data.userVote) {
+                selectedOption.value = data.userVote;
+            }
         }
     } catch {
-        loadPoll();
+        // Server sync fallback
     } finally {
         busy.value = false;
     }

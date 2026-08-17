@@ -49,7 +49,7 @@
         @endif
 
         <div class="mt-auto pt-4 flex items-center justify-between border-t border-gray-100 dark:border-gray-800/60">
-            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">{{ $post->author?->name ?? 'Viral Plush' }}</span>
+            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">{{ $post->author?->name ?? 'ViralPulse' }}</span>
             <span class="text-xs font-bold text-brand-600 dark:text-brand-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                 Read Article &rarr;
             </span>

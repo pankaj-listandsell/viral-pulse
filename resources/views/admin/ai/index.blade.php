@@ -134,15 +134,28 @@
 
         <div class="space-y-4">
             <x-ui.card title="Provider" subtitle="API keys live in .env, never in the database.">
-                <form method="POST" action="{{ route('admin.ai.settings') }}" class="space-y-4">
+                @php
+                    $providerModels = [];
+                    foreach ($providers as $pKey => $pVal) {
+                        $providerModels[$pKey] = $pVal['models'] ?? [];
+                    }
+                    $savedModel = app(\App\Services\SettingsService::class)->get("ai_model_{$currentProvider}") ?: '';
+                @endphp
+
+                <form method="POST" action="{{ route('admin.ai.settings') }}" class="space-y-4"
+                      x-data="{
+                          selectedProvider: '{{ $currentProvider }}',
+                          selectedModel: '{{ $savedModel }}',
+                          providerModels: {{ json_encode($providerModels) }}
+                      }">
                     @csrf
 
                     @if($providers)
                         <div>
                             <x-ui.label for="ai_provider">Active provider</x-ui.label>
-                            <x-ui.select id="ai_provider" name="ai_provider" :invalid="$errors->has('ai_provider')">
+                            <x-ui.select id="ai_provider" name="ai_provider" x-model="selectedProvider" :invalid="$errors->has('ai_provider')">
                                 @foreach($providers as $key => $provider)
-                                    <option value="{{ $key }}" @selected($currentProvider === $key)>{{ $provider['label'] }}</option>
+                                    <option value="{{ $key }}">{{ $provider['label'] }}</option>
                                 @endforeach
                             </x-ui.select>
                             <x-ui.error for="ai_provider" />
@@ -150,15 +163,12 @@
 
                         <div>
                             <x-ui.label for="ai_model">Model</x-ui.label>
-                            <x-ui.select id="ai_model" name="ai_model" :invalid="$errors->has('ai_model')">
+                            <x-ui.select id="ai_model" name="ai_model" x-model="selectedModel" :invalid="$errors->has('ai_model')">
                                 <option value="">Provider default</option>
-                                @foreach($providers[$currentProvider]['models'] ?? [] as $id => $label)
-                                    <option value="{{ $id }}">{{ $label }}</option>
-                                @endforeach
+                                <template x-for="(label, id) in (providerModels[selectedProvider] || {})" :key="id">
+                                    <option :value="id" x-text="label" :selected="selectedModel === id"></option>
+                                </template>
                             </x-ui.select>
-                            <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                Save after switching provider to see that provider's models.
-                            </p>
                             <x-ui.error for="ai_model" />
                         </div>
 
@@ -171,7 +181,7 @@
                             />
                         </div>
 
-                        <x-ui.button type="submit" variant="secondary" class="w-full">Save</x-ui.button>
+                        <x-ui.button type="submit" variant="secondary" class="w-full">Save AI settings</x-ui.button>
                     @else
                         <p class="text-sm text-gray-500 dark:text-gray-400">
                             Nothing to configure until a provider key is present in <code>.env</code>.

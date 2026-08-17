@@ -51,13 +51,12 @@ class SettingSeeder extends Seeder
             ['group' => 'general', 'key' => 'posts_per_page', 'value' => '12', 'type' => SettingType::Integer, 'is_public' => true],
 
             // SEO
-            ['group' => 'seo', 'key' => 'seo_default_description', 'value' => 'Trending stories explained clearly and quickly — news, technology, entertainment and sport, updated through the day as things develop.', 'type' => SettingType::Text, 'is_public' => true],
-            ['group' => 'seo', 'key' => 'seo_default_keywords', 'value' => null, 'type' => SettingType::String],
+            ['group' => 'seo', 'key' => 'seo_default_title', 'value' => 'ViralPulse - Latest Trending News, Tech & Viral Stories', 'type' => SettingType::String, 'is_public' => true],
+            ['group' => 'seo', 'key' => 'seo_default_description', 'value' => 'Stay informed with ViralPulse: Your source for breaking news, latest viral trends, tech gadgets, finance insights & entertainment stories updated 24/7.', 'type' => SettingType::Text, 'is_public' => true],
+            ['group' => 'seo', 'key' => 'seo_default_keywords', 'value' => 'trending news, viral stories, breaking news, technology updates, financial trends, entertainment buzz, viralpulse, daily news', 'type' => SettingType::String, 'is_public' => true],
             ['group' => 'seo', 'key' => 'seo_default_og_image', 'value' => null, 'type' => SettingType::File, 'is_public' => true],
-            ['group' => 'seo', 'key' => 'seo_twitter_handle', 'value' => null, 'type' => SettingType::String, 'is_public' => true],
+            ['group' => 'seo', 'key' => 'seo_twitter_handle', 'value' => '@ViralPulse', 'type' => SettingType::String, 'is_public' => true],
             ['group' => 'seo', 'key' => 'seo_robots_default', 'value' => 'index, follow', 'type' => SettingType::String],
-            // Kill switch for robots.txt. Useful while a site is being filled
-            // with content and is not worth indexing yet.
             ['group' => 'seo', 'key' => 'seo_discourage_indexing', 'value' => '0', 'type' => SettingType::Boolean],
 
             // Social

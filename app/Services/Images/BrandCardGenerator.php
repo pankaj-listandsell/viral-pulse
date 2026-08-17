@@ -41,9 +41,25 @@ class BrandCardGenerator implements FeaturedImageGenerator
      */
     private const MARGIN = 136;
 
-    private const BLACK_FONT = 'C:/Windows/Fonts/seguibl.ttf';
+    private const CANDIDATE_BLACK_FONTS = [
+        'C:/Windows/Fonts/seguibl.ttf',
+        'C:/Windows/Fonts/arialbd.ttf',
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+        '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+        '/usr/share/fonts/truetype/freefont/FreeSansBold.ttf',
+        '/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf',
+        '/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf',
+    ];
 
-    private const BOLD_FONT = 'C:/Windows/Fonts/segoeuib.ttf';
+    private const CANDIDATE_BOLD_FONTS = [
+        'C:/Windows/Fonts/segoeuib.ttf',
+        'C:/Windows/Fonts/arial.ttf',
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+        '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
+        '/usr/share/fonts/dejavu/DejaVuSans.ttf',
+        '/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf',
+    ];
 
     public function __construct(private readonly MediaService $media) {}
 
@@ -54,8 +70,10 @@ class BrandCardGenerator implements FeaturedImageGenerator
 
     public function generate(Post $post): ?Media
     {
-        if (! function_exists('imagettftext') || ! is_file($this->blackFont())) {
-            Log::warning('Cannot draw a brand card: GD FreeType or the font is unavailable.');
+        $blackFont = $this->blackFont();
+
+        if (! function_exists('imagettftext') || ! $blackFont || ! is_file($blackFont)) {
+            Log::warning('Cannot draw a brand card: GD FreeType or a compatible font is unavailable.');
 
             return null;
         }
@@ -147,7 +165,7 @@ class BrandCardGenerator implements FeaturedImageGenerator
             $x += 64;
         }
 
-        $this->text($im, self::BOLD_FONT, 27, $x, 95, [255, 255, 255], $name);
+        $this->text($im, $this->boldFont(), 27, $x, 95, [255, 255, 255], $name);
     }
 
     /**
@@ -156,11 +174,11 @@ class BrandCardGenerator implements FeaturedImageGenerator
     private function category($im, Post $post, array $accent): void
     {
         $label = Str::upper($post->category?->name ?? 'Latest');
-        $width = $this->width(self::BOLD_FONT, 19, $label);
+        $width = $this->width($this->boldFont(), 19, $label);
         $right = self::WIDTH - self::MARGIN;
 
         imagefilledrectangle($im, $right - $width - 28, 64, $right, 108, imagecolorallocate($im, ...$accent));
-        $this->text($im, self::BOLD_FONT, 19, $right - $width - 14, 93, [255, 255, 255], $label);
+        $this->text($im, $this->boldFont(), 19, $right - $width - 14, 93, [255, 255, 255], $label);
     }
 
     /**
@@ -175,10 +193,11 @@ class BrandCardGenerator implements FeaturedImageGenerator
         // largest size that merely fits ends up crowding the date; shrinking it
         // one step buys the whitespace back and still reads from a thumbnail.
         $size = 40;
-        $lines = $this->wrap(self::BLACK_FONT, $size, $title, $maxWidth);
+        $blackFont = $this->blackFont();
+        $lines = $this->wrap($blackFont, $size, $title, $maxWidth);
 
         foreach ([64, 58, 52, 46, 40] as $candidate) {
-            $wrapped = $this->wrap(self::BLACK_FONT, $candidate, $title, $maxWidth);
+            $wrapped = $this->wrap($blackFont, $candidate, $title, $maxWidth);
 
             if (count($wrapped) <= 3) {
                 $size = $candidate;
@@ -193,7 +212,7 @@ class BrandCardGenerator implements FeaturedImageGenerator
         $y = (int) round((self::HEIGHT / 2) - ((count($lines) - 1) * $leading / 2) + $size * 0.34);
 
         foreach ($lines as $line) {
-            $this->text($im, self::BLACK_FONT, $size, self::MARGIN, $y, [255, 255, 255], $line);
+            $this->text($im, $blackFont, $size, self::MARGIN, $y, [255, 255, 255], $line);
             $y += $leading;
         }
     }
@@ -203,7 +222,7 @@ class BrandCardGenerator implements FeaturedImageGenerator
         $date = ($post->published_at ?? $post->created_at ?? now())->format('j F Y');
         $reading = $post->reading_time ? " · {$post->reading_time} min read" : '';
 
-        $this->text($im, self::BOLD_FONT, 22, self::MARGIN, self::HEIGHT - 62, [148, 163, 184], $date.$reading);
+        $this->text($im, $this->boldFont(), 22, self::MARGIN, self::HEIGHT - 62, [148, 163, 184], $date.$reading);
     }
 
     /**
@@ -271,8 +290,25 @@ class BrandCardGenerator implements FeaturedImageGenerator
         ];
     }
 
-    private function blackFont(): string
+    private function blackFont(): ?string
     {
-        return self::BLACK_FONT;
+        foreach (self::CANDIDATE_BLACK_FONTS as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
+    private function boldFont(): string
+    {
+        foreach (self::CANDIDATE_BOLD_FONTS as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return $this->blackFont() ?? self::CANDIDATE_BOLD_FONTS[0];
     }
 }

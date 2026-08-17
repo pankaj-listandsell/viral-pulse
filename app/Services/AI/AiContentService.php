@@ -72,13 +72,38 @@ class AiContentService
         try {
             $response = $provider->generate($request, $system, $user);
         } catch (AiGenerationException $e) {
-            $generation->update([
-                'status' => AiGenerationStatus::Failed,
-                'error_message' => $e->getMessage(),
-                'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
-            ]);
+            $fallback = $this->providers->fallback($this->providers->current());
 
-            throw $e;
+            if ($fallback) {
+                try {
+                    Log::info("Primary AI provider ({$provider->name()}) failed, attempting fallback to {$fallback->name()}", [
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    $response = $fallback->generate($request, $system, $user);
+
+                    $generation->update([
+                        'provider' => $fallback->name(),
+                        'model' => $fallback->model(),
+                    ]);
+                } catch (AiGenerationException $fallbackException) {
+                    $generation->update([
+                        'status' => AiGenerationStatus::Failed,
+                        'error_message' => "{$e->getMessage()} | Fallback ({$fallback->name()}): {$fallbackException->getMessage()}",
+                        'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+                    ]);
+
+                    throw $fallbackException;
+                }
+            } else {
+                $generation->update([
+                    'status' => AiGenerationStatus::Failed,
+                    'error_message' => $e->getMessage(),
+                    'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+                ]);
+
+                throw $e;
+            }
         }
 
         $payload = $response['payload'];

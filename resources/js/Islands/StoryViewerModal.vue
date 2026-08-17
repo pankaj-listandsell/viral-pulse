@@ -114,17 +114,17 @@ onBeforeUnmount(() => {
                 >
                     <!-- Gradient Story Ring around Avatar / Image -->
                     <div class="relative size-16 sm:size-20 rounded-full p-[2.5px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 transition-transform duration-300 group-hover:scale-105 shadow-md">
-                        <div class="size-full overflow-hidden rounded-full border-2 border-white dark:border-gray-950 bg-gray-100 dark:bg-gray-800">
+                        <div class="relative size-full overflow-hidden rounded-full border-2 border-white dark:border-gray-950 bg-gradient-to-br from-brand-600 to-purple-800 flex items-center justify-center text-white">
                             <img
                                 v-if="story.image"
                                 :src="story.image"
                                 :alt="story.title"
-                                class="size-full object-cover"
+                                class="absolute inset-0 size-full object-cover opacity-60 blur-[1px]"
                                 loading="lazy"
                             >
-                            <div v-else class="size-full flex items-center justify-center font-bold text-gray-400 text-xs">
-                                ⚡
-                            </div>
+                            <span class="relative z-10 text-xs font-black uppercase tracking-wider drop-shadow-md">
+                                {{ (story.category || '⚡').slice(0, 3) }}
+                            </span>
                         </div>
                     </div>
 
@@ -138,12 +138,12 @@ onBeforeUnmount(() => {
 
         <!-- Fullscreen Visual Story Modal -->
         <Teleport to="body">
-            <div v-if="isOpen && currentStory" class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 select-none">
+            <div v-if="isOpen && currentStory" class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 select-none p-4">
                 <!-- Close Button -->
                 <button
                     type="button"
                     aria-label="Close story"
-                    class="absolute top-4 right-4 z-50 rounded-full bg-black/50 p-2 text-white/90 hover:bg-black/80 transition"
+                    class="absolute top-4 right-4 z-50 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition backdrop-blur-md"
                     @click.stop="closeStory"
                 >
                     <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -151,24 +151,24 @@ onBeforeUnmount(() => {
 
                 <!-- Main Vertical Story Card (9:16 aspect ratio) -->
                 <div
-                    class="relative w-full max-w-sm h-full max-h-[85vh] sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between bg-gray-950 text-white cursor-pointer"
+                    class="relative w-full max-w-sm h-full max-h-[88vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between bg-gray-950 text-white cursor-pointer border border-white/10"
                     @click="handleTap"
                 >
-                    <!-- Story Background Image with dark gradient -->
+                    <!-- Ambient Glow Blurred Background (No Text Clash) -->
                     <img
                         v-if="currentStory.image"
                         :src="currentStory.image"
                         :alt="currentStory.title"
-                        class="absolute inset-0 size-full object-cover opacity-80"
+                        class="absolute inset-0 size-full object-cover blur-2xl scale-125 opacity-30 brightness-50"
                     >
-                    <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/90"></div>
+                    <div class="absolute inset-0 bg-gradient-to-b from-gray-950/80 via-gray-950/60 to-gray-950"></div>
 
                     <!-- Top Segmented Progress Bars -->
-                    <div class="relative z-20 flex items-center gap-1.5 p-3.5 pt-4">
+                    <div class="relative z-20 flex items-center gap-1.5 p-4 pt-4">
                         <div
                             v-for="(s, i) in stories"
                             :key="s.id"
-                            class="h-1 flex-1 overflow-hidden rounded-full bg-white/30"
+                            class="h-1 flex-1 overflow-hidden rounded-full bg-white/20"
                         >
                             <div
                                 class="h-full bg-white transition-all duration-75"
@@ -180,29 +180,38 @@ onBeforeUnmount(() => {
                     </div>
 
                     <!-- Story Top Header (Category & Time) -->
-                    <div class="relative z-20 px-4 flex items-center justify-between text-xs">
-                        <span v-if="currentStory.category" class="rounded-full bg-brand-600/90 px-3 py-0.5 font-bold uppercase tracking-wider text-[10px]">
+                    <div class="relative z-20 px-5 flex items-center justify-between text-xs">
+                        <span v-if="currentStory.category" class="rounded-full bg-brand-500/80 backdrop-blur-md px-3 py-1 font-extrabold uppercase tracking-wider text-[10px] text-white shadow-sm">
                             {{ currentStory.category }}
                         </span>
-                        <span v-if="currentStory.reading_time" class="font-medium text-white/70">
+                        <span v-if="currentStory.reading_time" class="font-medium text-white/60 text-xs">
                             {{ currentStory.reading_time }} min read
                         </span>
                     </div>
 
+                    <!-- Middle Floating Icon Decoration -->
+                    <div class="relative z-20 my-auto flex flex-col items-center justify-center p-6 text-center">
+                        <div class="size-16 rounded-2xl bg-gradient-to-tr from-brand-600 to-purple-600 p-0.5 shadow-xl">
+                            <div class="size-full rounded-[14px] bg-gray-900/90 flex items-center justify-center text-2xl">
+                                ⚡
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Story Bottom Content & CTA -->
-                    <div class="relative z-20 p-6 space-y-4">
-                        <h2 class="text-xl sm:text-2xl font-extrabold leading-tight tracking-tight drop-shadow-md">
+                    <div class="relative z-20 p-6 space-y-4 bg-gradient-to-t from-black via-black/80 to-transparent pt-8">
+                        <h2 class="text-xl sm:text-2xl font-black leading-tight tracking-tight text-white drop-shadow-md">
                             {{ currentStory.title }}
                         </h2>
 
-                        <p v-if="currentStory.excerpt" class="text-xs sm:text-sm text-white/80 line-clamp-3 leading-relaxed drop-shadow-xs">
+                        <p v-if="currentStory.excerpt" class="text-xs sm:text-sm text-gray-300 line-clamp-3 leading-relaxed">
                             {{ currentStory.excerpt }}
                         </p>
 
                         <div class="pt-2">
                             <a
                                 :href="currentStory.url"
-                                class="flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-xs font-bold text-gray-900 shadow-xl transition hover:bg-gray-100 active:scale-95"
+                                class="flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3.5 text-xs font-bold text-gray-900 shadow-xl transition hover:bg-gray-100 active:scale-95"
                                 @click.stop
                             >
                                 <span>Read Full Story</span>

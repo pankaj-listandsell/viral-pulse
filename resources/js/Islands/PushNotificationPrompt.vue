@@ -34,7 +34,7 @@ async function subscribe() {
             localStorage.setItem('viral_push_subscribed', 'true');
 
             // Send a welcome notification
-            new Notification('ViralPlush ⚡', {
+            new Notification('ViralPulse ⚡', {
                 body: 'Thanks for subscribing! You will receive instant breaking news updates.',
                 icon: '/favicon.ico',
             });

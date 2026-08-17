@@ -88,4 +88,29 @@ class AiProviderManager
     {
         return $this->configured() !== [];
     }
+
+    /**
+     * Gets a fallback configured provider if the primary provider fails.
+     */
+    public function fallback(?string $primary = null): ?AiProvider
+    {
+        if ($this->override) {
+            return null;
+        }
+
+        $primary ??= $this->current();
+        $configured = array_keys($this->configured());
+
+        foreach ($configured as $name) {
+            if ($name !== $primary) {
+                try {
+                    return $this->resolve($name);
+                } catch (\Throwable) {
+                    continue;
+                }
+            }
+        }
+
+        return null;
+    }
 }

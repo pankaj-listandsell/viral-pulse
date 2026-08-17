@@ -36,6 +36,7 @@ class PromptBuilder
         - No inline styles, no classes, no script, no iframe, no images.
         - Open with a paragraph, not a heading.
         - Break the article into sections with h2 headings a reader can scan.
+        - Conclude with a "<h2>Frequently Asked Questions</h2>" section containing 2 to 4 high-intent questions (using <h3>Question?</h3> followed by a clear <p>Answer</p>) so readers get quick answers.
 
         Write the way a careful human editor would: vary sentence length, skip
         filler transitions, and cut any sentence that only restates the previous

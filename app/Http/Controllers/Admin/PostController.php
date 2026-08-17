@@ -43,6 +43,7 @@ class PostController extends Controller
                 ->selectRaw('status, count(*) as total')
                 ->groupBy('status')
                 ->pluck('total', 'status'),
+            'trashedCount' => Post::onlyTrashed()->count(),
             'filters' => $request->only('search', 'status', 'category', 'source', 'trashed'),
         ]);
     }
