@@ -43,6 +43,7 @@ class SettingSeeder extends Seeder
             // General
             ['group' => 'general', 'key' => 'timezone', 'value' => 'Asia/Kolkata', 'type' => SettingType::String, 'is_public' => true],
             ['group' => 'general', 'key' => 'site_name', 'value' => config('app.name'), 'type' => SettingType::String, 'is_public' => true],
+            ['group' => 'general', 'key' => 'site_tagline', 'value' => 'Trending stories, explained fast.', 'type' => SettingType::String, 'is_public' => true],
             ['group' => 'general', 'key' => 'site_description', 'value' => 'Daily coverage of what India is searching for — trending news, technology, entertainment, sport and clear explainers, published throughout the day.', 'type' => SettingType::Text, 'is_public' => true],
             ['group' => 'general', 'key' => 'site_logo', 'value' => null, 'type' => SettingType::File, 'is_public' => true],
             ['group' => 'general', 'key' => 'site_favicon', 'value' => null, 'type' => SettingType::File, 'is_public' => true],
@@ -134,6 +135,8 @@ class SettingSeeder extends Seeder
             ['group' => 'ai', 'key' => 'ai_auto_publish', 'value' => config('site.content.auto_publish') ? '1' : '0', 'type' => SettingType::Boolean],
             ['group' => 'ai', 'key' => 'ai_auto_generate', 'value' => config('trending.automation.enabled') ? '1' : '0', 'type' => SettingType::Boolean],
             ['group' => 'ai', 'key' => 'ai_daily_limit', 'value' => (string) config('ai.daily_limit', 50), 'type' => SettingType::Integer],
+            ['group' => 'ai', 'key' => 'ai_default_language', 'value' => 'en', 'type' => SettingType::String],
+            ['group' => 'ai', 'key' => 'ai_default_tone', 'value' => 'informative', 'type' => SettingType::String],
         ];
     }
 }
