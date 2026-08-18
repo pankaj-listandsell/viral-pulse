@@ -32,9 +32,13 @@
 
         <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
             
-            {{-- Visual Web Stories Carousel --}}
+            {{-- Visual Top Stories & Daily Horoscope Carousel --}}
             @php
-                $webStories = $trending->map(fn($p) => [
+                $settingsService = app(\App\Services\SettingsService::class);
+                $webStoriesEnabled = $settingsService->bool('web_stories_enabled', true);
+                $horoscopeEnabled = $settingsService->bool('horoscope_enabled', true);
+
+                $webStories = $webStoriesEnabled ? $trending->map(fn($p) => [
                     'id' => $p->id,
                     'title' => $p->title,
                     'excerpt' => $p->excerpt,
@@ -42,12 +46,15 @@
                     'image' => $p->featured_image ? Storage::disk(config('site.media.disk'))->url($p->featured_image) : null,
                     'url' => route('posts.show', $p),
                     'reading_time' => $p->reading_time,
-                ])->values()->all();
+                ])->values()->all() : [];
+
+                $activeSigns = $horoscopeEnabled ? ($signs ?? []) : [];
+                $activeTodayHoroscopes = $horoscopeEnabled ? ($todayHoroscopes ?? []) : [];
             @endphp
 
-            @if(!empty($webStories))
+            @if(!empty($webStories) || !empty($activeSigns))
                 <div data-island="StoryViewerModal" data-island-eager
-                     data-props="{{ json_encode(['stories' => $webStories]) }}"></div>
+                     data-props="{{ json_encode(['stories' => $webStories, 'signs' => $activeSigns, 'todayHoroscopes' => $activeTodayHoroscopes, 'pageUrl' => route('horoscope')]) }}"></div>
             @endif
 
             {{-- Overhauled Hero Slider Section --}}
@@ -117,22 +124,20 @@
                                             </div>
 
                                             <div class="mt-6 flex items-center justify-between border-t border-gray-100 pt-5 dark:border-gray-800/80">
-                                                <div class="flex items-center gap-3">
-                                                    <div class="flex size-9 items-center justify-center rounded-full bg-brand-100 text-brand-700 font-bold text-sm dark:bg-brand-900/40 dark:text-brand-400">
-                                                        {{ substr($post->author?->name ?? 'A', 0, 1) }}
-                                                    </div>
-                                                    <div class="text-xs">
-                                                        <p class="font-semibold text-gray-900 dark:text-white">{{ $post->author?->name }}</p>
-                                                        <p class="text-gray-500 dark:text-gray-400 mt-0.5">
-                                                            <time datetime="{{ $post->published_at?->toDateString() }}">{{ $post->published_at?->format('M j, Y') }}</time>
-                                                        </p>
-                                                    </div>
+                                                <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                                    <x-icon name="calendar" class="size-3.5 text-gray-400" />
+                                                    <time datetime="{{ $post->published_at?->toDateString() }}">{{ $post->published_at?->format('M j, Y') }}</time>
+                                                    @if($post->reading_time)
+                                                        <span>&middot;</span>
+                                                        <span>{{ $post->reading_time }} min read</span>
+                                                    @endif
                                                 </div>
-                                                @if($post->reading_time)
-                                                    <span class="rounded-md bg-gray-100 px-2 py-1 text-[11px] font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                                                        {{ $post->reading_time }} min read
-                                                    </span>
-                                                @endif
+                                                <a href="{{ route('posts.show', $post) }}"
+                                                   class="inline-flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 transition"
+                                                   tabindex="{{ $index === 0 ? '0' : '-1' }}">
+                                                    <span>Read Article</span>
+                                                    <span>&rarr;</span>
+                                                </a>
                                             </div>
                                         </div>
                                     </div>

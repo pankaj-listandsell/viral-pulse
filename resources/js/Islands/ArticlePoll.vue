@@ -25,25 +25,7 @@ const busy = ref(false);
 
 const storageKey = computed(() => `poll_vote_${props.postId}`);
 
-function calculatePercents() {
-    const total = totalVotes.value;
-    options.value = options.value.map(opt => ({
-        ...opt,
-        percent: total > 0 ? Math.round((opt.count / total) * 100) : 0,
-    }));
-}
-
 async function loadPoll() {
-    // Check localStorage first for instant display
-    try {
-        const localSaved = localStorage.getItem(storageKey.value);
-        if (localSaved) {
-            selectedOption.value = localSaved;
-        }
-    } catch {
-        // Ignore localStorage errors
-    }
-
     try {
         const res = await fetch(`/post/${props.postId}/poll`, {
             headers: { Accept: 'application/json' },
@@ -55,36 +37,29 @@ async function loadPoll() {
             if (data.options) {
                 options.value = data.options;
             }
+            // Strict database state sync:
             if (data.userVote) {
                 selectedOption.value = data.userVote;
-                try {
-                    localStorage.setItem(storageKey.value, data.userVote);
-                } catch {}
+                try { localStorage.setItem(storageKey.value, data.userVote); } catch {}
+            } else {
+                selectedOption.value = null;
+                try { localStorage.removeItem(storageKey.value); } catch {}
             }
         }
     } catch {
-        // Fallback
+        // Only if offline, read from localStorage
+        try {
+            const localSaved = localStorage.getItem(storageKey.value);
+            if (localSaved) {
+                selectedOption.value = localSaved;
+            }
+        } catch {}
     }
 }
 
 async function vote(optionId) {
     if (selectedOption.value || busy.value) return;
     busy.value = true;
-
-    // Instant Optimistic UI Update
-    selectedOption.value = optionId;
-    totalVotes.value++;
-    options.value = options.value.map(opt => {
-        if (opt.id === optionId) {
-            return { ...opt, count: opt.count + 1 };
-        }
-        return opt;
-    });
-    calculatePercents();
-
-    try {
-        localStorage.setItem(storageKey.value, optionId);
-    } catch {}
 
     try {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
@@ -109,12 +84,13 @@ async function vote(optionId) {
             if (data.options) {
                 options.value = data.options;
             }
-            if (data.userVote) {
-                selectedOption.value = data.userVote;
-            }
+            selectedOption.value = data.userVote || optionId;
+            try {
+                localStorage.setItem(storageKey.value, selectedOption.value);
+            } catch {}
         }
     } catch {
-        // Server sync fallback
+        // error
     } finally {
         busy.value = false;
     }

@@ -43,6 +43,12 @@ return Application::configure(basePath: dirname(__DIR__))
             CanonicalUrl::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'post/*/like',
+            'post/*/react',
+            'post/*/poll/vote',
+        ]);
+
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
         ]);

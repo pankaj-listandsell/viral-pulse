@@ -49,10 +49,13 @@
         @endif
 
         <div class="mt-auto pt-4 flex items-center justify-between border-t border-gray-100 dark:border-gray-800/60">
-            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">{{ $post->author?->name ?? 'ViralPulse' }}</span>
-            <span class="text-xs font-bold text-brand-600 dark:text-brand-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                Read Article &rarr;
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                <x-icon name="calendar" class="size-3.5 text-gray-400" />
+                {{ $post->published_at?->format('M j, Y') }}
             </span>
+            <a href="{{ $url }}" class="text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                Read Article &rarr;
+            </a>
         </div>
     </div>
 </article>

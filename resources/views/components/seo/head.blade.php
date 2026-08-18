@@ -3,18 +3,20 @@
 @php
     $settings = app(\App\Services\SettingsService::class);
     $siteName = $settings->get('site_name') ?: config('app.name');
+    $tagline = $settings->get('site_tagline');
 
     $title = $seo['title'] ?? null;
 
     // The site name is dropped once the headline is long enough to fill the
     // result on its own. Appending it there only pushes the part that matters
-    // past where Google truncates.
+    // past where Google truncates. On home page, the tagline gives strong SEO keywords.
     $fullTitle = match (true) {
+        ! $title && $tagline => "{$siteName} – {$tagline}",
         ! $title => $siteName,
         mb_strlen($title) > 55 => $title,
         default => "{$title} · {$siteName}",
     };
-    $description = $seo['description'] ?? $settings->get('seo_default_description');
+    $description = $seo['description'] ?? $settings->get('seo_default_description') ?? ($tagline ? "{$siteName} – {$tagline}" : null);
     $canonical = $seo['canonical'] ?? url()->current();
     $image = $seo['image'] ?? null;
     $robots = $seo['robots'] ?? $settings->get('seo_robots_default') ?: 'index, follow';

@@ -18,6 +18,28 @@
     display: none !important;
 }
 
+@layer base {
+    a,
+    button,
+    [role="button"],
+    summary,
+    label[for],
+    input[type="submit"],
+    input[type="button"],
+    input[type="reset"],
+    input[type="checkbox"],
+    input[type="radio"],
+    select {
+        cursor: pointer;
+    }
+
+    button:disabled,
+    input:disabled,
+    [aria-disabled="true"] {
+        cursor: not-allowed;
+    }
+}
+
 @theme {
     --font-sans: 'Outfit', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';

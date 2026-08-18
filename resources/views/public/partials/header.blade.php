@@ -30,6 +30,17 @@
                    'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' => ! request()->routeIs('trending'),
                ])>Trending</a>
 
+            @if($siteSettings['horoscope_enabled'] ?? true)
+                <a href="{{ route('horoscope') }}"
+                   @class([
+                       'rounded-lg px-3 py-1.5 text-sm font-medium transition flex items-center gap-1',
+                       'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400' => request()->routeIs('horoscope'),
+                       'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' => ! request()->routeIs('horoscope'),
+                   ])>
+                   <span>✨</span> Horoscope
+                </a>
+            @endif
+
             @foreach($nav as $category)
                 <a href="{{ route('categories.show', $category) }}"
                    @class([
@@ -88,6 +99,9 @@
             <ul class="grid grid-cols-2 gap-1">
                 <li><a href="{{ route('trending') }}" class="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800">Trending</a></li>
                 <li><a href="{{ route('latest') }}" class="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800">Latest</a></li>
+                @if($siteSettings['horoscope_enabled'] ?? true)
+                    <li><a href="{{ route('horoscope') }}" class="block rounded-lg px-3 py-2 text-sm font-bold text-purple-600 dark:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-800">✨ Horoscope</a></li>
+                @endif
                 @foreach($nav as $category)
                     <li>
                         <a href="{{ route('categories.show', $category) }}"

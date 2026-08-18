@@ -121,6 +121,13 @@ class Post extends Model
         return 'slug';
     }
 
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where($field ?? 'slug', $value)
+            ->when(is_numeric($value), fn ($query) => $query->orWhere('id', (int) $value))
+            ->first();
+    }
+
     protected function metaTitle(): Attribute
     {
         return Attribute::get(fn (): string => $this->seo_title ?: $this->title);

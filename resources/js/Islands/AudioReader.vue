@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 
 const props = defineProps({
     title: { type: String, default: '' },
@@ -11,16 +11,90 @@ const speed = ref(1.0);
 const progress = ref(0);
 const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
-let utterance = null;
-let words = [];
-let totalWords = 0;
-let currentWordIndex = 0;
+let chunks = [];
+let currentChunkIndex = 0;
+let totalLength = 0;
+let processedLength = 0;
+let selectedVoice = null;
+let isStopping = false;
+
+function loadVoice() {
+    if (!supported) return;
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices || voices.length === 0) return;
+
+    selectedVoice = voices.find(v => (v.lang === 'en-IN' || v.lang === 'en_IN') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Online') || v.name.includes('Heera') || v.name.includes('Neerja') || v.name.includes('Ravi') || v.name.includes('Priya') || v.name.includes('Prabhat')))
+        || voices.find(v => v.lang === 'en-IN' || v.lang === 'en_IN')
+        || voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Premium')))
+        || voices.find(v => v.lang.startsWith('en'))
+        || voices[0];
+}
+
+onMounted(() => {
+    if (supported) {
+        loadVoice();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoice;
+        }
+    }
+});
 
 function getArticleText() {
     const articleEl = document.querySelector('.prose');
     if (!articleEl) return props.title;
-    // Extract readable text, removing scripts/styles
     return `${props.title}. ` + articleEl.innerText.replace(/\s+/g, ' ').trim();
+}
+
+function splitIntoChunks(text) {
+    // Split into sentences so each utterance is short (< 150 chars) for instant audio start
+    const rawSentences = text.match(/[^.!?\n]+[.!?\n]+|[^.!?\n]+$/g) || [text];
+    const cleanChunks = [];
+    
+    for (const s of rawSentences) {
+        const trimmed = s.trim();
+        if (trimmed.length > 0) {
+            cleanChunks.push(trimmed);
+        }
+    }
+    return cleanChunks;
+}
+
+function speakNextChunk() {
+    if (isStopping || !isPlaying.value) return;
+
+    if (currentChunkIndex >= chunks.length) {
+        isPlaying.value = false;
+        isPaused.value = false;
+        progress.value = 100;
+        return;
+    }
+
+    const chunk = chunks[currentChunkIndex];
+    const utterance = new SpeechSynthesisUtterance(chunk);
+    utterance.rate = speed.value;
+    utterance.lang = 'en-IN';
+
+    if (selectedVoice) {
+        utterance.voice = selectedVoice;
+    }
+
+    utterance.onend = () => {
+        if (isStopping || !isPlaying.value) return;
+        processedLength += chunk.length;
+        if (totalLength > 0) {
+            progress.value = Math.min(99, Math.round((processedLength / totalLength) * 100));
+        }
+        currentChunkIndex++;
+        speakNextChunk();
+    };
+
+    utterance.onerror = (e) => {
+        if (e.error === 'interrupted' || e.error === 'canceled') return;
+        currentChunkIndex++;
+        speakNextChunk();
+    };
+
+    window.speechSynthesis.speak(utterance);
 }
 
 function startSpeaking() {
@@ -33,48 +107,24 @@ function startSpeaking() {
         return;
     }
 
+    isStopping = true;
     window.speechSynthesis.cancel();
+    isStopping = false;
 
-    const fullText = getArticleText();
-    words = fullText.split(/\s+/);
-    totalWords = words.length;
-    currentWordIndex = 0;
-    progress.value = 0;
-
-    utterance = new SpeechSynthesisUtterance(fullText);
-    utterance.rate = speed.value;
-    utterance.lang = 'en-US';
-
-    // Try to pick a natural sounding voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Premium')));
-    if (preferred) {
-        utterance.voice = preferred;
+    if (!selectedVoice) {
+        loadVoice();
     }
 
-    utterance.onboundary = (event) => {
-        if (event.name === 'word') {
-            currentWordIndex++;
-            if (totalWords > 0) {
-                progress.value = Math.min(100, Math.round((currentWordIndex / totalWords) * 100));
-            }
-        }
-    };
-
-    utterance.onend = () => {
-        isPlaying.value = false;
-        isPaused.value = false;
-        progress.value = 100;
-    };
-
-    utterance.onerror = () => {
-        isPlaying.value = false;
-        isPaused.value = false;
-    };
-
-    window.speechSynthesis.speak(utterance);
+    const fullText = getArticleText();
+    chunks = splitIntoChunks(fullText);
+    totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
+    processedLength = 0;
+    currentChunkIndex = 0;
+    progress.value = 0;
     isPlaying.value = true;
     isPaused.value = false;
+
+    speakNextChunk();
 }
 
 function pauseSpeaking() {
@@ -98,12 +148,19 @@ function toggleSpeed() {
     const nextIdx = (speeds.indexOf(speed.value) + 1) % speeds.length;
     speed.value = speeds[nextIdx];
     if (isPlaying.value) {
-        startSpeaking();
+        // Restart from current chunk at new speed
+        isStopping = true;
+        window.speechSynthesis.cancel();
+        isStopping = false;
+        isPlaying.value = true;
+        isPaused.value = false;
+        speakNextChunk();
     }
 }
 
 onBeforeUnmount(() => {
     if (supported) {
+        isStopping = true;
         window.speechSynthesis.cancel();
     }
 });

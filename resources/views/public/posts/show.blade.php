@@ -51,22 +51,17 @@
                         <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">{{ $post->excerpt }}</p>
                     @endif
 
-                    <div class="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 border-y border-gray-200 py-4 text-sm dark:border-gray-800">
-                        <span class="grid size-9 shrink-0 place-items-center rounded-full bg-gray-100 text-sm font-semibold dark:bg-gray-800">
-                            {{ Str::upper(Str::substr($post->author?->name ?? '?', 0, 1)) }}
-                        </span>
-
-                        <span>
-                            <span class="block font-medium">{{ $post->author?->name }}</span>
-                            <span class="block text-gray-500 dark:text-gray-400">
-                                <time datetime="{{ $post->published_at?->toIso8601String() }}">
-                                    {{ $post->published_at?->format('F j, Y') }}
-                                </time>
-                                @if($post->reading_time)
-                                    &middot; {{ $post->reading_time }} min read
-                                @endif
-                            </span>
-                        </span>
+                    <div class="mt-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-y border-gray-200 py-4 text-sm dark:border-gray-800">
+                        <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                            <x-icon name="calendar" class="size-4 text-gray-400" />
+                            <time datetime="{{ $post->published_at?->toIso8601String() }}" class="font-medium text-gray-700 dark:text-gray-300">
+                                {{ $post->published_at?->format('F j, Y') }}
+                            </time>
+                            @if($post->reading_time)
+                                <span>&middot;</span>
+                                <span>{{ $post->reading_time }} min read</span>
+                            @endif
+                        </div>
 
                         <span class="ml-auto flex items-center gap-2">
                             <span data-island="BookmarkButton" data-island-eager
@@ -163,13 +158,6 @@
                            class="rounded-lg border border-gray-200 px-3 py-1.5 transition hover:border-brand-400 dark:border-gray-800">WhatsApp</a>
                     </div>
                 </div>
-
-                @if($post->author?->bio)
-                    <div class="mt-8 rounded-xl border border-gray-200 p-5 dark:border-gray-800">
-                        <p class="text-sm font-semibold">About {{ $post->author->name }}</p>
-                        <p class="mt-1.5 text-sm text-gray-600 dark:text-gray-400">{{ $post->author->bio }}</p>
-                    </div>
-                @endif
 
                 @if($related->isNotEmpty())
                     <section aria-labelledby="related-heading" class="mt-12">

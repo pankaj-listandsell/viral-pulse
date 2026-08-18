@@ -54,7 +54,7 @@ final class SettingsSchema
                 'description' => 'What the site is called and how it introduces itself.',
                 'fields' => [
                     ['key' => 'site_name', 'label' => 'Site name', 'input' => 'text', 'rules' => ['required', 'string', 'max:100']],
-                    ['key' => 'site_tagline', 'label' => 'Tagline', 'input' => 'text', 'rules' => ['nullable', 'string', 'max:150'], 'help' => 'One line, shown under the name.'],
+                    ['key' => 'site_tagline', 'label' => 'Site Tagline (SEO)', 'input' => 'text', 'rules' => ['nullable', 'string', 'max:150'], 'help' => 'Included in homepage title & search results (e.g. Trending Stories, Viral News & Explainers).'],
                     ['key' => 'site_description', 'label' => 'Description', 'input' => 'textarea', 'rules' => ['nullable', 'string', 'max:500'], 'help' => 'Used as the fallback meta description and in the RSS feed.'],
                     ['key' => 'contact_email', 'label' => 'Contact email', 'input' => 'email', 'rules' => ['nullable', 'email:rfc', 'max:255'], 'help' => 'Where contact form notifications are sent. Falls back to the admin account.'],
                     ['key' => 'posts_per_page', 'label' => 'Posts per page', 'input' => 'number', 'rules' => ['required', 'integer', 'min:3', 'max:48']],
@@ -106,6 +106,8 @@ final class SettingsSchema
                 'label' => 'Features',
                 'description' => 'Switches for the parts of the site visitors interact with.',
                 'fields' => [
+                    ['key' => 'web_stories_enabled', 'label' => 'Web stories carousel', 'input' => 'boolean', 'rules' => ['boolean'], 'help' => 'Show or hide the visual web stories carousel on the home page.'],
+                    ['key' => 'horoscope_enabled', 'label' => 'Daily horoscope & zodiac', 'input' => 'boolean', 'rules' => ['boolean'], 'help' => 'Show or hide the daily horoscope & zodiac carousel and page.'],
                     ['key' => 'likes_enabled', 'label' => 'Likes on articles', 'input' => 'boolean', 'rules' => ['boolean']],
                     ['key' => 'search_enabled', 'label' => 'Site search', 'input' => 'boolean', 'rules' => ['boolean']],
                     ['key' => 'newsletter_enabled', 'label' => 'Newsletter signup', 'input' => 'boolean', 'rules' => ['boolean']],

@@ -40,6 +40,10 @@
                 <ul class="mt-3 space-y-2 text-sm">
                     <li><a href="{{ route('latest') }}" class="text-gray-600 transition hover:text-brand-600 dark:text-gray-400">Latest</a></li>
                     <li><a href="{{ route('trending') }}" class="text-gray-600 transition hover:text-brand-600 dark:text-gray-400">Trending</a></li>
+                    @if($siteSettings['horoscope_enabled'] ?? true)
+                        <li><a href="{{ route('horoscope') }}" class="text-gray-600 transition hover:text-brand-600 dark:text-gray-400 flex items-center gap-1"><span>✨</span> Horoscope</a></li>
+                        <li><a href="{{ route('horoscope.compatibility') }}" class="text-gray-600 transition hover:text-brand-600 dark:text-gray-400 flex items-center gap-1"><span>💖</span> Love Match</a></li>
+                    @endif
                     <li><a href="{{ route('categories.index') }}" class="text-gray-600 transition hover:text-brand-600 dark:text-gray-400">Categories</a></li>
                     <li><a href="{{ route('sitemap.page') }}" class="text-gray-600 transition hover:text-brand-600 dark:text-gray-400">Sitemap</a></li>
                 </ul>

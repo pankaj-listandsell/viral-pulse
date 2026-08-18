@@ -62,7 +62,7 @@ class AppServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
-        View::composer('layouts.*', function ($view): void {
+        View::composer(['layouts.*', 'public.*'], function ($view): void {
             $view->with('siteSettings', app(SettingsService::class)->public());
         });
 

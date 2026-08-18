@@ -124,6 +124,8 @@ class SitemapService
                 ['loc' => route('home'), 'lastmod' => $this->latestPostUpdate()],
                 ['loc' => route('latest'), 'lastmod' => null],
                 ['loc' => route('trending'), 'lastmod' => null],
+                ['loc' => route('horoscope'), 'lastmod' => now()],
+                ['loc' => route('horoscope.compatibility'), 'lastmod' => now()],
                 ['loc' => route('contact'), 'lastmod' => null],
                 ['loc' => route('sitemap.page'), 'lastmod' => null],
             ];

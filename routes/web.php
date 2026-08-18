@@ -31,6 +31,8 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('latest', [ArchiveController::class, 'latest'])->name('latest');
 Route::get('trending', [ArchiveController::class, 'trending'])->name('trending');
+Route::get('horoscope', [\App\Http\Controllers\Public\HoroscopeController::class, 'index'])->name('horoscope');
+Route::get('zodiac-compatibility', [\App\Http\Controllers\Public\HoroscopeController::class, 'compatibility'])->name('horoscope.compatibility');
 
 Route::get('categories', [ArchiveController::class, 'categories'])->name('categories.index');
 Route::get('category/{category}', [ArchiveController::class, 'category'])->name('categories.show');

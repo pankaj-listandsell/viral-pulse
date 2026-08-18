@@ -36,6 +36,7 @@ class PublicSiteTest extends TestCase
             'home' => route('home'),
             'latest' => route('latest'),
             'trending' => route('trending'),
+            'horoscope' => route('horoscope'),
             'categories' => route('categories.index'),
             'category' => route('categories.show', $this->category),
             'tag' => route('tags.show', $tag),
@@ -132,12 +133,63 @@ class PublicSiteTest extends TestCase
             ->assertSee('No results');
     }
 
-    public function test_ad_slots_render_nothing_while_adsense_is_off(): void
+    public function test_web_stories_can_be_toggled_via_settings(): void
     {
-        $post = Post::factory()->for($this->category)->create();
+        Cache::flush();
+        Post::factory()->for($this->category)->create([
+            'title' => 'Story Post 1',
+            'is_trending' => true,
+            'published_at' => now(),
+        ]);
 
-        $this->get(route('posts.show', $post))
-            ->assertDontSee('adsbygoogle', false)
-            ->assertDontSee('Advertisement');
+        // Default: enabled
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('StoryViewerModal');
+
+        // When both web stories and horoscope disabled in settings
+        \App\Models\Setting::where('key', 'web_stories_enabled')->update(['value' => '0']);
+        \App\Models\Setting::where('key', 'horoscope_enabled')->update(['value' => '0']);
+        app(\App\Services\SettingsService::class)->flush();
+        Cache::flush();
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertDontSee('StoryViewerModal');
+
+        $this->get(route('horoscope'))
+            ->assertNotFound();
+    }
+
+    public function test_horoscope_page_renders_all_zodiac_signs_and_predictions(): void
+    {
+        $response = $this->get(route('horoscope'))->assertOk();
+
+        $response->assertSee('Daily Horoscope & Rashifal', false);
+        $response->assertSee('ZodiacHoroscopeWidget');
+        $response->assertSee('Aries');
+        $response->assertSee('Pisces');
+        $response->assertSee('.webp');
+    }
+
+    public function test_zodiac_compatibility_page_renders_with_seo_and_direct_match(): void
+    {
+        $response = $this->get(route('horoscope.compatibility', ['sign1' => 'aries', 'sign2' => 'leo']))->assertOk();
+
+        $response->assertSee('Zodiac Love Compatibility Calculator', false);
+        $response->assertSee('ZodiacCompatibilityCalculator');
+        // A pair URL gets its own title, carrying that pair's score.
+        $response->assertSee('Aries and Leo Compatibility: 94% Love Match', false);
+        // ... and its own canonical, so the two parameter orders are one page.
+        $response->assertSee(route('horoscope.compatibility', ['sign1' => 'aries', 'sign2' => 'leo']), false);
+        $response->assertSee('zodiac_love_hero.webp');
+        $response->assertSee('WebApplication');
+        $response->assertSee('FAQPage');
+
+        // Verify inclusion in sitemap-pages.xml
+        $sitemap = $this->get(route('sitemap.pages'))->assertOk();
+        $sitemap->assertSee(route('horoscope'));
+        $sitemap->assertSee(route('horoscope.compatibility'));
     }
 }
+

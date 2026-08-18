@@ -80,6 +80,8 @@ class SettingSeeder extends Seeder
             ['group' => 'analytics', 'key' => 'google_site_verification', 'value' => null, 'type' => SettingType::String],
 
             // Features
+            ['group' => 'features', 'key' => 'web_stories_enabled', 'value' => '1', 'type' => SettingType::Boolean, 'is_public' => true],
+            ['group' => 'features', 'key' => 'horoscope_enabled', 'value' => '1', 'type' => SettingType::Boolean, 'is_public' => true],
             ['group' => 'features', 'key' => 'newsletter_enabled', 'value' => '1', 'type' => SettingType::Boolean, 'is_public' => true],
             ['group' => 'features', 'key' => 'likes_enabled', 'value' => '1', 'type' => SettingType::Boolean, 'is_public' => true],
             ['group' => 'features', 'key' => 'search_enabled', 'value' => '1', 'type' => SettingType::Boolean, 'is_public' => true],
