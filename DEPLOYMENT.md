@@ -153,6 +153,9 @@ Supervisor works equally well if that is what you already run.
 
 ### What the schedule does
 
+Times are read in `APP_TIMEZONE` (Asia/Kolkata), not the server's clock, so the
+server may sit in UTC as long as its clock is correct.
+
 | When | Task |
 |---|---|
 | every minute | `posts:publish-scheduled` |
@@ -161,7 +164,11 @@ Supervisor works equally well if that is what you already run.
 | hourly at :50 | `content:reconcile-counters` |
 | 00:15 | `stats:aggregate` |
 | 03:00 | `data:cleanup` |
+| 05:00 | `content:generate-daily-horoscope` |
 | daily | queue table pruning |
+
+`php artisan schedule:list` prints this table from the code itself, which is
+the version to trust.
 
 ---
 

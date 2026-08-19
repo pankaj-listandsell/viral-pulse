@@ -1,3 +1,35 @@
+# Compress text before sending it.
+#
+# Lives here rather than in cPanel's "Optimize Website" screen: that writes to
+# the primary domain's document root, and this site is served from its own, so
+# the setting never reached it. LiteSpeed reads these directives too.
+#
+# Only text is listed. JPEG, PNG and WebP are already compressed; running them
+# through deflate spends CPU to make them very slightly larger.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml
+    AddOutputFilterByType DEFLATE application/xml application/rss+xml application/json
+    AddOutputFilterByType DEFLATE text/javascript application/javascript
+    AddOutputFilterByType DEFLATE image/svg+xml
+
+    # Proxies must keep the compressed and uncompressed copies apart, or a
+    # client that cannot decompress is handed a gzipped page.
+    Header append Vary Accept-Encoding
+</IfModule>
+
+# Hashed filenames: the content of build/assets/app-DTBMix20.css can never
+# change, so it is safe to cache for a year. A new build produces a new hash.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes

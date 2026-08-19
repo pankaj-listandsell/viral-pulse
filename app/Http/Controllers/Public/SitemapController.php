@@ -39,11 +39,20 @@ class SitemapController extends Controller
         return $this->xml($this->sitemap->pages());
     }
 
+    /**
+     * No X-Robots-Tag here, deliberately.
+     *
+     * It used to send `noindex`, meaning to keep the raw XML out of search
+     * results. Google reads that header on a sitemap as an instruction to
+     * ignore the sitemap itself: Search Console reported "Couldn't fetch"
+     * against a file that was answering 200 in under a second. Sitemap XML
+     * does not turn up in results anyway, so the header bought nothing and
+     * cost the site its entire submitted index.
+     */
     private function xml(string $body): Response
     {
         return response($body, 200, [
             'Content-Type' => 'application/xml; charset=UTF-8',
-            'X-Robots-Tag' => 'noindex',
         ]);
     }
 }
