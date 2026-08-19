@@ -21,20 +21,17 @@ class HomeController extends Controller
     public function index(): View
     {
         $heroSlides = $this->feed->heroSlides(5);
-        $heroIds = $heroSlides->pluck('id');
 
-        // Over-fetch, then drop whatever is already in the top-stories block.
-        // Printing the same headline twice on one screen made the page look
-        // thinner than the archive actually is.
-        $latest = $this->feed->latest(16)
-            ->reject(fn ($post) => $heroIds->contains($post->id))
-            ->take(8)
-            ->values();
-
-        $trending = $this->feed->trending(10)
-            ->reject(fn ($post) => $heroIds->contains($post->id))
-            ->take(6)
-            ->values();
+        // The hero stories are not filtered out of these lists.
+        //
+        // They were, to avoid printing a headline twice on one screen. The
+        // effect was worse than the repetition: publish a story and it
+        // vanished from "Latest stories", because being among the five newest
+        // put it in the slider instead. A section labelled latest has to show
+        // the latest, and the slider is a separate promotion of the same
+        // stories - which is how every newsroom front page works.
+        $latest = $this->feed->latest(8);
+        $trending = $this->feed->trending(6);
 
         $signs = $this->horoscope->signs();
         $todayHoroscopes = [];
@@ -44,8 +41,11 @@ class HomeController extends Controller
         }
 
         // The list a reader sees at the top of the page, in the order they see
-        // it, so the schema matches the rendering rather than the query.
-        $indexed = $heroSlides->concat($latest);
+        // it, so the schema matches the rendering rather than the query. Unique
+        // here even though the page repeats a headline between the slider and
+        // the feed: an ItemList naming the same URL at two positions describes
+        // a list that does not exist.
+        $indexed = $heroSlides->concat($latest)->unique('id')->values();
 
         return view('public.home', [
             'heroSlides' => $heroSlides,
