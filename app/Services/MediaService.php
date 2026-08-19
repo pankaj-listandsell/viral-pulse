@@ -40,7 +40,19 @@ class MediaService
         $width = $image->width();
         $height = $image->height();
 
-        Storage::disk($disk)->put($path, (string) $this->encode($image, $extension), 'public');
+        // put() returns false rather than throwing on this disk, and the row
+        // below would be created anyway: the library then lists a picture that
+        // does not exist, with nothing in the log to say why. A full quota and
+        // an unwritable storage directory both look exactly like this, so the
+        // write is checked and the reason surfaced instead.
+        $written = Storage::disk($disk)->put($path, (string) $this->encode($image, $extension), 'public');
+
+        if (! $written || ! Storage::disk($disk)->exists($path)) {
+            throw new RuntimeException(
+                "The image could not be saved to storage/app/public/{$directory}. "
+                .'Check that the storage directory is writable and that the disk quota is not full.'
+            );
+        }
 
         $media = Media::create([
             'user_id' => $user?->id,

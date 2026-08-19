@@ -44,7 +44,10 @@ return [
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
             'throw' => false,
-            'report' => false,
+            // Reported, not silent. Every picture on the site is written to
+            // this disk; a failure that neither throws nor logs leaves a media
+            // library full of broken thumbnails and no way to find out why.
+            'report' => true,
         ],
 
         's3' => [
