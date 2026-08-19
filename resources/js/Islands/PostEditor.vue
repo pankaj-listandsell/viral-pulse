@@ -18,6 +18,8 @@ const html = ref(props.value);
 const pickerOpen = ref(false);
 const linkOpen = ref(false);
 const linkHref = ref('');
+const sourceOpen = ref(false);
+const sourceHtml = ref('');
 
 const editor = useEditor({
     content: props.value,
@@ -62,6 +64,28 @@ function insertImage(media) {
 function openLink() {
     linkHref.value = editor.value?.getAttributes('link').href ?? '';
     linkOpen.value = true;
+}
+
+/*
+ * Source mode.
+ *
+ * The articles on this site arrive as HTML - the AI writer emits it, and so
+ * does anything pasted out of a code block. Dropped into the editor as plain
+ * text, TipTap does the correct thing for a text paste and escapes it, so the
+ * article publishes with <p> printed on the page instead of forming it. There
+ * was no way in, which made that the easy mistake to make.
+ */
+function openSource() {
+    sourceHtml.value = editor.value?.getHTML() ?? '';
+    sourceOpen.value = true;
+}
+
+function applySource() {
+    // Parsed as HTML, not inserted as text: the second argument tells TipTap
+    // to run it through the schema, which is the whole point of this box.
+    editor.value?.commands.setContent(sourceHtml.value, true);
+    html.value = editor.value?.getHTML() ?? '';
+    sourceOpen.value = false;
 }
 
 function applyLink() {
@@ -125,9 +149,43 @@ const blocks = [
             <button type="button" class="rounded px-2 py-1 text-xs font-medium transition hover:bg-gray-200 dark:hover:bg-gray-700"
                     @click="pickerOpen = true">Image</button>
 
+            <span class="mx-1 h-5 w-px bg-gray-300 dark:bg-gray-700" />
+
+            <button
+                type="button"
+                title="Paste or edit the article as HTML"
+                class="rounded px-2 py-1 text-xs font-bold transition hover:bg-gray-200 dark:hover:bg-gray-700"
+                :class="sourceOpen && 'bg-gray-200 dark:bg-gray-700'"
+                @click="sourceOpen ? (sourceOpen = false) : openSource()"
+            >&lt;/&gt; HTML</button>
+
             <span class="ml-auto pr-1.5 text-xs tabular-nums text-gray-500 dark:text-gray-400">
                 {{ wordCount }} words
             </span>
+        </div>
+
+        <div v-if="sourceOpen" class="border-b border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
+            <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                Paste HTML here and press Apply — it is parsed, not printed. Pasting HTML straight into the editor
+                above stores the tags as text, which is how <code>&lt;p&gt;</code> ends up visible on the published page.
+            </p>
+
+            <textarea
+                v-model="sourceHtml"
+                rows="14"
+                spellcheck="false"
+                class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-xs leading-relaxed text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                placeholder="&lt;p&gt;Your article…&lt;/p&gt;"
+            ></textarea>
+
+            <div class="mt-2 flex items-center gap-2">
+                <button type="button"
+                        class="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-700"
+                        @click="applySource">Apply</button>
+                <button type="button"
+                        class="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                        @click="sourceOpen = false">Cancel</button>
+            </div>
         </div>
 
         <div v-if="linkOpen" class="flex items-center gap-2 border-b border-gray-200 bg-white p-2 dark:border-gray-800 dark:bg-gray-900">
