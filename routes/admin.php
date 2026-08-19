@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\ScheduledPostController;
 use App\Http\Controllers\Admin\SeoSettingsController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\StorageLinkController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TrendingTopicController;
 use App\Http\Controllers\Admin\UserController;
@@ -125,4 +126,12 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('seo', [SeoSettingsController::class, 'update'])->name('seo.update');
 
     Route::get('activity', [ActivityLogController::class, 'index'])->name('activity.index');
+
+    /*
+     * Maintenance. `php artisan storage:link` normally does this, and it needs
+     * a shell; shared hosting often has the terminal switched off. The repair
+     * is a POST so it cannot be fired by a prefetch or an <img> tag.
+     */
+    Route::get('maintenance/storage-link', [StorageLinkController::class, 'show'])->name('maintenance.storage-link');
+    Route::post('maintenance/storage-link', [StorageLinkController::class, 'repair'])->name('maintenance.storage-link.repair');
 });
