@@ -40,6 +40,15 @@ class TrendingGenerationTest extends TestCase
         Http::preventStrayRequests();
         config(['ai.providers.gemini.key' => 'test-key-not-real']);
 
+        // Morning, deliberately.
+        //
+        // The planner hands out slots inside the publishing window (07:00 to
+        // 22:00), spaced by the configured gap and capped by the lookahead. Run
+        // the suite after about half past eight in the evening and only one
+        // slot is left before the window closes, so a test asking for two
+        // articles gets one - failing on the clock rather than on the code.
+        $this->travelTo(now()->setTime(9, 0));
+
         // Pinned rather than inherited from .env, so tuning the live site's
         // quality threshold cannot turn the suite red.
         config([
