@@ -1,12 +1,29 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 
+const props = defineProps({
+    appId: {
+        type: String,
+        default: null,
+    },
+});
+
 const isVisible = ref(false);
 const isSupported = typeof window !== 'undefined' && 'Notification' in window;
 const isSubscribed = ref(false);
 
-function checkPermission() {
-    if (!isSupported) return;
+async function checkPermission() {
+    if (!isSupported || !props.appId) return;
+
+    // Check if OneSignal is loaded
+    if (typeof window.OneSignal !== 'undefined') {
+        const optedIn = window.OneSignal.User?.PushSubscription?.optedIn ?? false;
+        if (optedIn) {
+            isSubscribed.value = true;
+            isVisible.value = false;
+            return;
+        }
+    }
 
     if (Notification.permission === 'granted') {
         isSubscribed.value = true;
@@ -27,19 +44,25 @@ async function subscribe() {
     if (!isSupported) return;
 
     try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
+        if (typeof window.OneSignal !== 'undefined') {
+            await window.OneSignal.User.PushSubscription.optIn();
             isSubscribed.value = true;
             isVisible.value = false;
             localStorage.setItem('viral_push_subscribed', 'true');
-
-            // Send a welcome notification
-            new Notification('ViralPulse ⚡', {
-                body: 'Thanks for subscribing! You will receive instant breaking news updates.',
-                icon: '/favicon.ico',
-            });
         } else {
-            dismiss();
+            // Fallback to native browser notifications if OneSignal script failed to load
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                isSubscribed.value = true;
+                isVisible.value = false;
+                localStorage.setItem('viral_push_subscribed', 'true');
+                new Notification('ViralPulse ⚡', {
+                    body: 'Thanks for subscribing! You will receive instant breaking news updates.',
+                    icon: '/favicon.ico',
+                });
+            } else {
+                dismiss();
+            }
         }
     } catch {
         dismiss();
@@ -52,13 +75,16 @@ function dismiss() {
 }
 
 onMounted(() => {
-    checkPermission();
+    // Delay slightly to let OneSignal script initialize
+    setTimeout(() => {
+        checkPermission();
+    }, 1500);
 });
 </script>
 
 <template>
     <div
-        v-if="isSupported && isVisible && !isSubscribed"
+        v-if="isSupported && appId && isVisible && !isSubscribed"
         class="fixed bottom-6 left-6 z-50 max-w-sm rounded-2xl border border-gray-200/90 bg-white p-4 shadow-2xl backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/95 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4"
     >
         <div class="flex items-start gap-3">
@@ -79,14 +105,14 @@ onMounted(() => {
                 <div class="mt-3 flex items-center gap-2">
                     <button
                         type="button"
-                        class="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-brand-700 active:scale-95"
+                        class="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-brand-700 active:scale-95 cursor-pointer"
                         @click="subscribe"
                     >
                         Allow Alerts
                     </button>
                     <button
                         type="button"
-                        class="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:border-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition"
+                        class="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:border-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition cursor-pointer"
                         @click="dismiss"
                     >
                         Later
@@ -97,7 +123,7 @@ onMounted(() => {
             <button
                 type="button"
                 aria-label="Close"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
                 @click="dismiss"
             >
                 <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>

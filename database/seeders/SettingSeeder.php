@@ -58,6 +58,8 @@ class SettingSeeder extends Seeder
             ['group' => 'seo', 'key' => 'seo_twitter_handle', 'value' => '@ViralPulse', 'type' => SettingType::String, 'is_public' => true],
             ['group' => 'seo', 'key' => 'seo_robots_default', 'value' => 'index, follow', 'type' => SettingType::String],
             ['group' => 'seo', 'key' => 'seo_discourage_indexing', 'value' => '0', 'type' => SettingType::Boolean],
+            ['group' => 'seo', 'key' => 'onesignal_app_id', 'value' => null, 'type' => SettingType::String, 'is_public' => true],
+            ['group' => 'seo', 'key' => 'onesignal_safari_web_id', 'value' => null, 'type' => SettingType::String, 'is_public' => true],
 
             // Social
             ['group' => 'social', 'key' => 'social_facebook', 'value' => null, 'type' => SettingType::String, 'is_public' => true],

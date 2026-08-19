@@ -44,6 +44,20 @@
                 src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ $client }}"></script>
     @endif
 
+    @if($oneSignalAppId = ($siteSettings['onesignal_app_id'] ?? null))
+        <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+        <script>
+            window.OneSignal = window.OneSignal || [];
+            OneSignal.push(async function() {
+                await OneSignal.init({
+                    appId: @json($oneSignalAppId),
+                    safari_web_id: @json($siteSettings['onesignal_safari_web_id'] ?? ''),
+                    allowLocalhostAsSecureOrigin: true,
+                });
+            });
+        </script>
+    @endif
+
     @stack('head')
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -65,7 +79,7 @@
 
 @include('public.partials.footer', ['nav' => $nav])
 
-<div data-island="PushNotificationPrompt"></div>
+<div data-island="PushNotificationPrompt" data-props="{{ json_encode(['appId' => $siteSettings['onesignal_app_id'] ?? null]) }}"></div>
 
 </body>
 </html>

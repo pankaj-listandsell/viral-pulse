@@ -223,6 +223,8 @@ final class SettingsSchema
                 ['key' => 'seo_robots_default', 'label' => 'Default robots directive', 'input' => 'select', 'options' => self::ROBOTS, 'rules' => ['required', Rule::in(array_keys(self::ROBOTS))]],
                 ['key' => 'seo_discourage_indexing', 'label' => 'Block all crawlers in robots.txt', 'input' => 'boolean', 'rules' => ['boolean'], 'help' => 'Turns robots.txt into a blanket Disallow. Useful while the site is being filled; remember to turn it off.'],
                 ['key' => 'seo_default_og_image', 'label' => 'Default share image', 'input' => 'image', 'rules' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'], 'help' => '1200×630 is the size every network crops to.'],
+                ['key' => 'onesignal_app_id', 'label' => 'OneSignal App ID', 'input' => 'text', 'rules' => ['nullable', 'string', 'max:100'], 'help' => 'Required for push notifications. From your OneSignal App Dashboard.'],
+                ['key' => 'onesignal_safari_web_id', 'label' => 'OneSignal Safari Web ID', 'input' => 'text', 'rules' => ['nullable', 'string', 'max:100'], 'help' => 'Optional. Needed to support Safari Web Push.'],
             ],
         ];
     }
