@@ -130,16 +130,10 @@
                         </span>
                     </div>
 
-                    @if($aiAssisted)
-                        <p class="mt-4 flex items-start gap-2.5 rounded-2xl border border-gray-200 bg-gray-50/80 px-4 py-3 text-xs leading-relaxed text-gray-600 dark:border-gray-800 dark:bg-gray-900/50 dark:text-gray-400">
-                            <span class="mt-px shrink-0 text-sm" aria-hidden="true">🤖</span>
-                            <span>
-                                <strong class="font-bold text-gray-900 dark:text-white">Drafted with AI, edited by a person.</strong>
-                                This article was written with AI assistance and then checked and approved by an editor before
-                                publishing. <a href="{{ route('pages.show', 'about') }}" class="font-semibold text-brand-600 underline-offset-2 hover:underline dark:text-brand-400">How we work</a>.
-                            </span>
-                        </p>
-                    @endif
+                    {{-- The AI disclosure is not here. It sits with the
+                         publisher card at the end of the article: a reader who
+                         wants to know who made this and how finds both facts in
+                         one place, and the top of the story is the story. --}}
 
                     {{-- Listen to Article Audio Player --}}
                     <div data-island="AudioReader" data-island-eager
@@ -239,9 +233,11 @@
                     </div>
                 </div>
 
-                {{-- Who stands behind the article, without inventing a byline:
-                     the publication is accountable for it, and the About page
-                     is where that is spelled out. --}}
+                {{-- Who stands behind the article and how it was made, in one
+                     block. The About page promises that an AI-drafted article
+                     "carries a visible note saying so", so the note stays -
+                     just at the end, where a reader asks the question, rather
+                     than across the top of every story. --}}
                 <section aria-labelledby="publisher-heading" class="mt-8 flex gap-4 rounded-2xl border border-gray-200 bg-gray-50/70 p-5 dark:border-gray-800 dark:bg-gray-900/40">
                     <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-brand-600 text-white">
                         <x-icon name="flame" class="size-6" />
@@ -252,6 +248,10 @@
                             Published by {{ $siteSettings['site_name'] ?? config('app.name') }}
                         </h2>
                         <p class="mt-1.5 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                            @if($aiAssisted)
+                                This article was drafted with AI assistance and then checked and approved by an editor
+                                before publishing.
+                            @endif
                             Every story is reviewed by an editor before it goes live. If something here is wrong,
                             <a href="{{ route('contact') }}" class="font-semibold text-brand-600 underline-offset-2 hover:underline dark:text-brand-400">tell us</a>
                             and we will correct it — <a href="{{ route('pages.show', 'about') }}" class="font-semibold text-brand-600 underline-offset-2 hover:underline dark:text-brand-400">how we work</a>.
