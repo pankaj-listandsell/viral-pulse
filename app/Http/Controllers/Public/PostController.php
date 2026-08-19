@@ -34,7 +34,9 @@ class PostController extends Controller
         // still open one to preview it before it goes live.
         abort_unless($isLive || $request->user()?->canAccessAdminPanel(), 404);
 
-        $post->load(['author:id,name,bio,avatar', 'category:id,name,slug,color', 'tags:id,name,slug']);
+        // The author relation is deliberately not loaded: nothing public names
+        // a person any more, so fetching one is a query for nobody.
+        $post->load(['category:id,name,slug,color', 'tags:id,name,slug']);
 
         $this->feed->withImages([$post]);
         $this->views->record($post, $request);
@@ -43,8 +45,32 @@ class PostController extends Controller
             'post' => $post,
             'related' => $this->feed->related($post),
             'popular' => $this->feed->popular(),
+            // Reading order, so an article is never a leaf: every story links
+            // on to the one before and after it, which is how a crawler walks
+            // the whole archive from any single entry point.
+            'previousPost' => $this->neighbour($post, 'previous'),
+            'nextPost' => $this->neighbour($post, 'next'),
             'seo' => $this->seo->forPost($post),
         ]);
+    }
+
+    /**
+     * The story published just before or just after this one.
+     */
+    private function neighbour(Post $post, string $direction): ?Post
+    {
+        if (! $post->published_at) {
+            return null;
+        }
+
+        return $this->feed->base()
+            ->whereKeyNot($post->id)
+            ->when(
+                $direction === 'previous',
+                fn ($query) => $query->where('published_at', '<', $post->published_at)->orderByDesc('published_at'),
+                fn ($query) => $query->where('published_at', '>', $post->published_at)->orderBy('published_at'),
+            )
+            ->first();
     }
 
     /**

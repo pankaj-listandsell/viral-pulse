@@ -75,8 +75,33 @@ SESSION_DRIVER=database
 
 MAIL_MAILER=smtp                 # "log" writes mail to a file and sends nothing
 
+LOG_LEVEL=warning                # "debug" fills the disk and records more than you need
+SESSION_SECURE_COOKIE=true       # once the site is on https, the cookie should never leave it
+
 GEMINI_API_KEY=...               # or OPENAI_API_KEY
 ```
+
+### Post pictures (optional)
+
+Which sections may carry a photograph or an AI drawing is an editorial rule and
+lives in `config/site.php` under `media.strategy`. News never gets either: a
+stock photo of a courtroom next to a report about one reads as evidence of that
+hearing, and an AI picture of an event depicts something that did not happen.
+
+These keys only decide whether those strategies are *available*. Without them
+every post falls back to the branded card, which is drawn locally and cannot
+fail:
+
+```dotenv
+PEXELS_API_KEY=                  # free, from pexels.com/api - real licensed photos
+GEMINI_IMAGE_MODEL=imagen-4.0-generate-001
+```
+
+### One setting that is not in `.env`
+
+Set **Settings → Site → contact email** before launch. Ad networks and most
+privacy laws expect a reachable address on the legal pages, and the contact
+form falls back to the first admin account's email without it.
 
 `APP_URL` is not cosmetic. The canonical middleware, the sitemap and every
 `route()` call read it, so a wrong value produces a sitemap full of URLs

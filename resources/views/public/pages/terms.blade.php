@@ -5,7 +5,7 @@
 @endphp
 
 @section('content')
-    <x-legal-page title="Terms of Service">
+    <x-legal-page :crumbs="$crumbs ?? []" title="Terms of Service">
         <p>
             By using {{ $siteName }} you agree to these terms. If you do not agree with them, please do not use
             the site.

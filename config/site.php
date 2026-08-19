@@ -67,6 +67,65 @@ return [
          * without in every feed it lands in.
          */
         'auto_featured_image' => env('AUTO_FEATURED_IMAGE', true),
+
+        /*
+        |----------------------------------------------------------------------
+        | Where a post's picture comes from
+        |----------------------------------------------------------------------
+        |
+        | Strategies are tried in order until one returns an image. 'card' never
+        | fails, so it belongs last in every list.
+        |
+        |   stock         a real, licensed photograph from Pexels
+        |   illustration  an AI drawing, labelled as one on the page
+        |   card          the branded headline card this site already draws
+        |
+        | The default is 'card' alone, and that is deliberate. A news report
+        | about a named person or a specific incident must not carry a stock
+        | photo that looks like documentary evidence of it, and it must never
+        | carry an AI picture of an event that did not happen. Sections opt in
+        | below, and only where the picture is understood as decoration or as a
+        | generic illustration of a subject rather than a record of an event.
+        |
+        */
+        'strategy' => [
+            '*' => ['card'],
+
+            // A photograph of a trading floor or a phone illustrates the
+            // subject without claiming to be the story.
+            'business' => ['stock', 'card'],
+            'technology' => ['stock', 'card'],
+            'sports' => ['stock', 'card'],
+            'travel' => ['stock', 'card'],
+            'education' => ['stock', 'card'],
+            'health' => ['stock', 'card'],
+            'entertainment' => ['stock', 'card'],
+            'lifestyle' => ['stock', 'illustration', 'card'],
+
+            // Nothing factual is being depicted here, so a drawing is honest.
+            'astrology' => ['illustration', 'card'],
+            'devotional' => ['illustration', 'card'],
+            'quiz-fun' => ['illustration', 'card'],
+        ],
+
+        'stock' => [
+            // Free for commercial use, no attribution required by licence -
+            // the photographer is credited on the page anyway, because taking
+            // the credit off someone's work is a poor way to use a free gift.
+            'endpoint' => 'https://api.pexels.com/v1/search',
+            'key' => env('PEXELS_API_KEY'),
+            'orientation' => 'landscape',
+            // Below this the photo is worse than no photo on a wide card.
+            'min_width' => 1200,
+        ],
+
+        'illustration' => [
+            // Imagen, reached with the same Gemini key. A missing key simply
+            // means this strategy is skipped and the next one runs.
+            'endpoint' => 'https://generativelanguage.googleapis.com/v1beta',
+            'model' => env('GEMINI_IMAGE_MODEL', 'imagen-4.0-generate-001'),
+            'key' => env('GEMINI_API_KEY'),
+        ],
     ],
 
     /*

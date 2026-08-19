@@ -6,13 +6,34 @@
 
 @section('content')
     <div class="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-        <h1 class="text-3xl font-semibold tracking-tight">Contact</h1>
-        <p class="mt-2 text-gray-600 dark:text-gray-400">
-            Story tips, corrections, business enquiries — all welcome.
-            @if($contactEmail)
-                You can also email <a href="mailto:{{ $contactEmail }}" class="text-brand-600 hover:underline">{{ $contactEmail }}</a>.
-            @endif
-        </p>
+        <x-breadcrumb :crumbs="$crumbs ?? []" />
+
+        <header class="border-b border-gray-200 pb-6 dark:border-gray-800">
+            <h1 class="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl dark:text-white">Contact</h1>
+            <p class="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base dark:text-gray-400">
+                Story tips, corrections, business enquiries — all welcome. Every message is read by a person, and we
+                usually reply within a couple of days.
+                @if($contactEmail)
+                    You can also email <a href="mailto:{{ $contactEmail }}" class="font-semibold text-brand-600 hover:underline">{{ $contactEmail }}</a>.
+                @endif
+            </p>
+
+            <ul class="mt-5 grid gap-3 sm:grid-cols-3">
+                @foreach([
+                    ['icon' => 'file-text', 'title' => 'Corrections', 'text' => 'Something wrong? We fix it and say so.'],
+                    ['icon' => 'flame', 'title' => 'Story tips', 'text' => 'Tell us what people are talking about.'],
+                    ['icon' => 'star', 'title' => 'Partnerships', 'text' => 'Advertising and business enquiries.'],
+                ] as $item)
+                    <li class="rounded-2xl border border-gray-200 bg-gray-50/70 p-4 dark:border-gray-800 dark:bg-gray-900/40">
+                        <span class="grid size-8 place-items-center rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                            <x-icon :name="$item['icon']" class="size-4" />
+                        </span>
+                        <p class="mt-2 text-sm font-black text-gray-900 dark:text-white">{{ $item['title'] }}</p>
+                        <p class="mt-0.5 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{{ $item['text'] }}</p>
+                    </li>
+                @endforeach
+            </ul>
+        </header>
 
         @if(session('success'))
             <p class="mt-6 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800

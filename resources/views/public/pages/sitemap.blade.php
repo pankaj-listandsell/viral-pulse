@@ -8,7 +8,9 @@
 
 @section('content')
     <div class="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-        <h1 class="text-3xl font-semibold tracking-tight">Sitemap</h1>
+        <x-breadcrumb :crumbs="$crumbs ?? []" />
+
+        <h1 class="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl dark:text-white">Sitemap</h1>
         <p class="mt-2 text-gray-600 dark:text-gray-400">
             A human-readable index. The machine-readable one lives at
             <a href="{{ url('sitemap.xml') }}" class="text-brand-600 hover:underline">/sitemap.xml</a>.

@@ -5,7 +5,7 @@ namespace App\Providers;
 use App\Models\ContactMessage;
 use App\Models\User;
 use App\Services\AI\AiProviderManager;
-use App\Services\Images\BrandCardGenerator;
+use App\Services\Images\ChainedImageGenerator;
 use App\Services\Images\Contracts\FeaturedImageGenerator;
 use App\Services\MediaResolver;
 use App\Services\SettingsConfigBridge;
@@ -34,10 +34,11 @@ class AppServiceProvider extends ServiceProvider
         // resolution downstream honour it.
         $this->app->singleton(AiProviderManager::class);
 
-        // The one place that decides how featured images are made. Swapping in
-        // generated photography or a stock-photo service later is a change to
-        // this line and nothing else.
-        $this->app->bind(FeaturedImageGenerator::class, BrandCardGenerator::class);
+        // The one place that decides how featured images are made. The chain
+        // itself decides nothing: it walks config('site.media.strategy'), which
+        // is where the editorial rule lives about which sections may carry a
+        // photograph, which may carry a drawing, and which get the card alone.
+        $this->app->bind(FeaturedImageGenerator::class, ChainedImageGenerator::class);
     }
 
     public function boot(): void

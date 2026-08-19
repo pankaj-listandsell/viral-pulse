@@ -44,6 +44,18 @@ class PageController extends Controller
         'disclaimer' => 'The limits of what you should rely on here. Articles are for general information and are not professional, legal, medical or financial advice.',
     ];
 
+    /**
+     * The schema.org type each page actually is. About and Contact have their
+     * own types, and using them lets a crawler tie the site to a publisher
+     * and a reachable address rather than guessing from four generic pages.
+     */
+    private const SCHEMA_TYPES = [
+        'about' => 'AboutPage',
+        'privacy' => 'WebPage',
+        'terms' => 'WebPage',
+        'disclaimer' => 'WebPage',
+    ];
+
     public function __construct(private readonly SeoService $seo) {}
 
     public function show(string $page): View
@@ -51,23 +63,63 @@ class PageController extends Controller
         abort_unless(array_key_exists($page, self::PAGES), 404);
 
         return view("public.pages.{$page}", [
-            'seo' => $this->seo->forPage(
-                self::PAGES[$page],
-                self::DESCRIPTIONS[$page],
-                route('pages.show', $page)
-            ),
+            'crumbs' => [['name' => self::PAGES[$page], 'url' => route('pages.show', $page)]],
+            'seo' => [
+                ...$this->seo->forPage(
+                    self::PAGES[$page],
+                    self::DESCRIPTIONS[$page],
+                    route('pages.show', $page)
+                ),
+                'schemas' => [
+                    $this->pageSchema(
+                        self::SCHEMA_TYPES[$page],
+                        self::PAGES[$page],
+                        self::DESCRIPTIONS[$page],
+                        route('pages.show', $page),
+                    ),
+                    $this->seo->breadcrumbSchema([
+                        ['name' => 'Home', 'url' => route('home')],
+                        ['name' => self::PAGES[$page], 'url' => route('pages.show', $page)],
+                    ]),
+                ],
+            ],
         ]);
     }
 
     public function contact(): View
     {
+        $description = 'Get in touch about a correction, a partnership, an advertising enquiry or anything else. Messages are read by a person and usually answered within a couple of days.';
+
         return view('public.pages.contact', [
-            'seo' => $this->seo->forPage(
-                'Contact',
-                'Get in touch about a correction, a partnership, an advertising enquiry or anything else. Messages are read by a person and usually answered within a couple of days.',
-                route('contact')
-            ),
+            'crumbs' => [['name' => 'Contact', 'url' => route('contact')]],
+            'seo' => [
+                ...$this->seo->forPage('Contact', $description, route('contact')),
+                'schemas' => [
+                    $this->pageSchema('ContactPage', 'Contact', $description, route('contact')),
+                    $this->seo->breadcrumbSchema([
+                        ['name' => 'Home', 'url' => route('home')],
+                        ['name' => 'Contact', 'url' => route('contact')],
+                    ]),
+                ],
+            ],
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function pageSchema(string $type, string $name, string $description, string $url): array
+    {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => $type,
+            'name' => $name,
+            'description' => $description,
+            'url' => $url,
+            'inLanguage' => str_replace('_', '-', app()->getLocale()),
+            'isPartOf' => ['@type' => 'WebSite', 'name' => $this->seo->siteName(), 'url' => url('/')],
+            'publisher' => $this->seo->organizationSchema(),
+        ];
     }
 
     public function submitContact(ContactRequest $request): RedirectResponse
@@ -111,12 +163,20 @@ class PageController extends Controller
      */
     public function sitemapPlaceholder(Request $request): View
     {
+        $description = 'Every section, category and recent article on the site in one place — the readable version of the XML sitemap search engines use.';
+
         return view('public.pages.sitemap', [
-            'seo' => $this->seo->forPage(
-                'Sitemap',
-                'Every section, category and recent article on the site in one place — the readable version of the XML sitemap search engines use.',
-                route('sitemap.page')
-            ),
+            'crumbs' => [['name' => 'Sitemap', 'url' => route('sitemap.page')]],
+            'seo' => [
+                ...$this->seo->forPage('Sitemap', $description, route('sitemap.page')),
+                'schemas' => [
+                    $this->pageSchema('WebPage', 'Sitemap', $description, route('sitemap.page')),
+                    $this->seo->breadcrumbSchema([
+                        ['name' => 'Home', 'url' => route('home')],
+                        ['name' => 'Sitemap', 'url' => route('sitemap.page')],
+                    ]),
+                ],
+            ],
         ]);
     }
 }

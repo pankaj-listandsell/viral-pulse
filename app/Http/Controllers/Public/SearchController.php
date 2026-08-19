@@ -30,7 +30,12 @@ class SearchController extends Controller
             'popular' => $this->feed->popular(),
             'seo' => $this->seo->forPage(
                 $term === '' ? 'Search' : "Search: {$term}",
-                'Search every article on the site.',
+                // Short of about seventy characters a description is discarded
+                // and rewritten, so even a noindex page gets a real one - this
+                // is what a reader sees when the link is shared.
+                $term === ''
+                    ? "Search every article on {$this->seo->siteName()} — trending news, technology, entertainment, sport, horoscope and explainers, all in one place."
+                    : "Every article on {$this->seo->siteName()} matching “{$term}”, newest first. Refine the words or browse the sections if nothing here is what you wanted.",
                 route('search'),
                 // Search result pages are thin and infinitely variable; keeping
                 // them out of the index avoids a crawl-budget sink.

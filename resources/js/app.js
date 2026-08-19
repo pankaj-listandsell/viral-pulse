@@ -58,15 +58,23 @@ function initReadingProgress() {
 }
 
 /**
- * Interactive, smooth hero slider with auto-play, touch swipe, and accessibility.
+ * Hero slider: auto-play, dots, arrows, touch swipe.
+ *
+ * Inactive slides are display:none rather than opacity-0. An element that is
+ * merely transparent is still in the viewport, so `loading="lazy"` does not
+ * defer it and every slide downloaded on first paint. Hiding them outright
+ * defers the work; the fade is kept by unhiding a frame before the opacity
+ * flips.
  */
 function initHeroSlider() {
     const slider = document.querySelector('[data-hero-slider]');
+
     if (!slider) {
         return;
     }
 
     const slides = slider.querySelectorAll('[data-slide]');
+
     if (slides.length <= 1) {
         return;
     }
@@ -74,77 +82,76 @@ function initHeroSlider() {
     const prevBtn = slider.querySelector('[data-slider-prev]');
     const nextBtn = slider.querySelector('[data-slider-next]');
     const dots = slider.querySelectorAll('[data-slider-dot]');
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     let currentIndex = 0;
     let autoPlayTimer = null;
-    const interval = 5000;
 
     function goToSlide(index) {
-        if (index < 0) {
-            index = slides.length - 1;
-        } else if (index >= slides.length) {
-            index = 0;
-        }
+        const target = (index + slides.length) % slides.length;
 
         slides.forEach((slide, i) => {
             const links = slide.querySelectorAll('a, button');
-            if (i === index) {
-                slide.classList.remove('opacity-0', 'pointer-events-none', 'z-0');
-                slide.classList.add('opacity-100', 'z-10', 'pointer-events-auto');
-                slide.setAttribute('aria-hidden', 'false');
-                links.forEach((l) => l.setAttribute('tabindex', '0'));
-            } else {
-                slide.classList.remove('opacity-100', 'z-10', 'pointer-events-auto');
-                slide.classList.add('opacity-0', 'pointer-events-none', 'z-0');
-                slide.setAttribute('aria-hidden', 'true');
-                links.forEach((l) => l.setAttribute('tabindex', '-1'));
+            const active = i === target;
+
+            if (active) {
+                slide.hidden = false;
+                // Read a layout property so the browser paints the unhidden
+                // slide before the opacity transition starts; without it the
+                // change is batched and the fade never runs.
+                void slide.offsetWidth;
+            }
+
+            slide.classList.toggle('opacity-100', active);
+            slide.classList.toggle('opacity-0', ! active);
+            slide.setAttribute('aria-hidden', active ? 'false' : 'true');
+            links.forEach((link) => link.setAttribute('tabindex', active ? '0' : '-1'));
+
+            if (! active) {
+                // Wait out the fade before removing it from the layout.
+                setTimeout(() => {
+                    if (slide.classList.contains('opacity-0')) {
+                        slide.hidden = true;
+                    }
+                }, 500);
             }
         });
 
         dots.forEach((dot, i) => {
-            if (i === index) {
-                dot.className = 'h-2 rounded-full transition-all duration-300 w-8 bg-brand-600 dark:bg-brand-400';
-            } else {
-                dot.className = 'h-2 rounded-full transition-all duration-300 w-2 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400';
-            }
+            dot.classList.toggle('w-8', i === target);
+            dot.classList.toggle('bg-brand-600', i === target);
+            dot.classList.toggle('dark:bg-brand-400', i === target);
+            dot.classList.toggle('w-2', i !== target);
+            dot.classList.toggle('bg-gray-300', i !== target);
+            dot.classList.toggle('dark:bg-gray-700', i !== target);
+            dot.setAttribute('aria-current', i === target ? 'true' : 'false');
         });
 
-        currentIndex = index;
-    }
-
-    function nextSlide() {
-        goToSlide(currentIndex + 1);
-    }
-
-    function prevSlide() {
-        goToSlide(currentIndex - 1);
+        currentIndex = target;
     }
 
     function startAutoPlay() {
         stopAutoPlay();
-        autoPlayTimer = setInterval(nextSlide, interval);
-    }
 
-    function stopAutoPlay() {
-        if (autoPlayTimer) {
-            clearInterval(autoPlayTimer);
-            autoPlayTimer = null;
+        if (! calm) {
+            autoPlayTimer = setInterval(() => goToSlide(currentIndex + 1), 6000);
         }
     }
 
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            nextSlide();
-            startAutoPlay();
-        });
+    function stopAutoPlay() {
+        clearInterval(autoPlayTimer);
+        autoPlayTimer = null;
     }
 
-    if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-            prevSlide();
-            startAutoPlay();
-        });
-    }
+    nextBtn?.addEventListener('click', () => {
+        goToSlide(currentIndex + 1);
+        startAutoPlay();
+    });
+
+    prevBtn?.addEventListener('click', () => {
+        goToSlide(currentIndex - 1);
+        startAutoPlay();
+    });
 
     dots.forEach((dot, i) => {
         dot.addEventListener('click', () => {
@@ -156,24 +163,26 @@ function initHeroSlider() {
     slider.addEventListener('mouseenter', stopAutoPlay);
     slider.addEventListener('mouseleave', startAutoPlay);
 
-    // Touch swipe support for mobile
+    // Nothing is moving while the tab is in the background; a timer that keeps
+    // firing there only costs battery.
+    document.addEventListener('visibilitychange', () => {
+        document.hidden ? stopAutoPlay() : startAutoPlay();
+    });
+
     let touchStartX = 0;
 
-    slider.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
+    slider.addEventListener('touchstart', (event) => {
+        touchStartX = event.changedTouches[0].screenX;
         stopAutoPlay();
     }, { passive: true });
 
-    slider.addEventListener('touchend', (e) => {
-        const touchEndX = e.changedTouches[0].screenX;
-        const diff = touchStartX - touchEndX;
-        if (Math.abs(diff) > 40) {
-            if (diff > 0) {
-                nextSlide();
-            } else {
-                prevSlide();
-            }
+    slider.addEventListener('touchend', (event) => {
+        const distance = touchStartX - event.changedTouches[0].screenX;
+
+        if (Math.abs(distance) > 40) {
+            goToSlide(currentIndex + (distance > 0 ? 1 : -1));
         }
+
         startAutoPlay();
     }, { passive: true });
 

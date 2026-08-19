@@ -88,8 +88,14 @@ class SeoTest extends TestCase
 
         $this->assertSame('A structured story', $article['headline']);
         $this->assertNotEmpty($article['datePublished']);
-        // A real account, never a fabricated byline.
-        $this->assertSame($post->author->name, $article['author']['name']);
+
+        // The publication is the author, not a staff account. Articles here are
+        // drafted by AI and reviewed by an editor, so one person's name on
+        // every one of them would be a byline nobody earned - and the page
+        // shows the masthead, which is what the markup has to agree with.
+        $this->assertSame('Organization', $article['author']['@type']);
+        $this->assertSame($article['publisher']['name'], $article['author']['name']);
+        $this->assertNotSame($post->author->name, $article['author']['name']);
         $this->assertSame('Organization', $article['publisher']['@type']);
     }
 

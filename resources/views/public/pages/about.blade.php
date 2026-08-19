@@ -6,7 +6,7 @@
 @endphp
 
 @section('content')
-    <x-legal-page title="About" :updated="false">
+    <x-legal-page :crumbs="$crumbs ?? []" title="About" :updated="false">
         <p>
             {{ $siteName }} covers trending stories, explainers and the things people are actually talking
             about — written to be read in a few minutes and to leave you knowing something you did not know before.

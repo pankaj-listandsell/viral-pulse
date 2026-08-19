@@ -18,6 +18,7 @@ class FeaturedImageService
 {
     public function __construct(
         private readonly FeaturedImageGenerator $generator,
+        private readonly BrandCardGenerator $cards,
         private readonly ActivityLogger $logger,
     ) {}
 
@@ -45,13 +46,37 @@ class FeaturedImageService
 
         $post->forceFill([
             'featured_image' => $media->path,
-            // Describes what the image actually is. Claiming it depicts the
-            // story would be a lie to anyone using a screen reader.
-            'featured_image_alt' => Str::limit($post->title, 120, ''),
+            // The generator knows what its own picture shows; only fall back
+            // to the headline when it did not say. Claiming a stock photo
+            // depicts the story would be a lie to anyone using a screen reader.
+            'featured_image_alt' => $media->alt_text ?: Str::limit($post->title, 120, ''),
         ])->save();
 
-        $this->logger->log('post.image_generated', $post, "Generated a card for \"{$post->title}\"");
+        $this->shareCard($post, $media->path);
+
+        $this->logger->log('post.image_generated', $post, "Generated a picture for \"{$post->title}\"");
 
         return true;
+    }
+
+    /**
+     * The 1200x630 headline card that social networks show.
+     *
+     * Only needed when the featured image is something else. A stock photo of
+     * a trading floor makes a poor share image next to a headline the reader
+     * cannot see, and the card was built for exactly that slot - so the post
+     * keeps both: the photograph on the page, the card in the feed.
+     */
+    private function shareCard(Post $post, string $featuredPath): void
+    {
+        if (filled($post->og_image) || str_contains($featuredPath, '/cards/')) {
+            return;
+        }
+
+        $card = $this->cards->generate($post);
+
+        if ($card) {
+            $post->forceFill(['og_image' => $card->path])->save();
+        }
     }
 }

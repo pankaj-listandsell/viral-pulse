@@ -6,7 +6,7 @@
 @endphp
 
 @section('content')
-    <x-legal-page title="Disclaimer">
+    <x-legal-page :crumbs="$crumbs ?? []" title="Disclaimer">
         <h2>General information only</h2>
         <p>
             Everything published on {{ $siteName }} is for general information and interest. It is not professional

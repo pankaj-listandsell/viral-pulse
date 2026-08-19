@@ -36,7 +36,7 @@ class MediaResolver
 
         $found = Media::query()
             ->whereIn('path', $missing)
-            ->get(['id', 'disk', 'path', 'width', 'height', 'conversions'])
+            ->get(['id', 'disk', 'path', 'width', 'height', 'conversions', 'caption'])
             ->keyBy('path');
 
         foreach ($missing as $path) {

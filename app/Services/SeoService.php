@@ -55,7 +55,10 @@ class SeoService
             'type' => 'article',
             'published_at' => $post->published_at,
             'modified_at' => $post->updated_at,
-            'author' => $post->author?->name,
+            // The masthead, matching the byline on the page and the author in
+            // the Article schema. A staff account's name on an AI-drafted
+            // article would be a byline nobody earned.
+            'author' => $this->siteName(),
             'schemas' => $schemas,
         ];
     }
@@ -66,7 +69,11 @@ class SeoService
     public function forCategory(Category $category, int $page = 1): array
     {
         return [
-            'title' => $category->seo_title ?: $category->name,
+            // A bare section name is about twenty characters once the site
+            // name is appended, which leaves most of the result line empty and
+            // says nothing a searcher typed. The suffix costs nothing and
+            // carries the words people actually search a section for.
+            'title' => $category->seo_title ?: "{$category->name} — latest news and stories",
             'description' => $this->description(
                 $category->seo_description ?: $this->archiveDescription($category->name, $category->description, $category->posts_count)
             ),
@@ -91,7 +98,9 @@ class SeoService
     public function forTag(Tag $tag, int $page = 1): array
     {
         return [
-            'title' => "#{$tag->name}",
+            // "#UPI" is four characters of title for a page that is entirely
+            // about UPI. The hash means nothing to a search engine.
+            'title' => "{$tag->name}: latest news and stories",
             'description' => $this->description($this->archiveDescription($tag->name, $tag->description, $tag->posts_count)),
             'canonical' => route('tags.show', $tag),
             'image' => $this->imageUrl(null),
@@ -186,11 +195,12 @@ class SeoService
             'articleSection' => $post->category?->name,
             'keywords' => $post->seo_keywords,
             'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => route('posts.show', $post)],
-            // A real account, never an invented byline.
-            'author' => $post->author ? [
-                '@type' => 'Person',
-                'name' => $post->author->name,
-            ] : null,
+            // The publication, not a person. Articles are drafted by AI and
+            // reviewed by an editor, so naming one staff account on every one
+            // of them would be a byline nobody earned - and Google expects the
+            // author in the markup to be the author shown on the page, which
+            // is now the masthead. schema.org allows an Organization here.
+            'author' => $this->organizationSchema(),
             'publisher' => $this->organizationSchema(),
         ]);
     }

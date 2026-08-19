@@ -66,6 +66,11 @@ Schedule::command('data:cleanup')
     ->dailyAt('03:00')
     ->withoutOverlapping(120);
 
+// Generate comprehensive daily horoscope articles every morning at 5:00 AM.
+Schedule::command('content:generate-daily-horoscope')
+    ->dailyAt('05:00')
+    ->withoutOverlapping(60);
+
 // Keeps the queue bookkeeping tables from growing without bound. Failed jobs
 // are kept a month, which is long enough to investigate a pattern.
 Schedule::command('queue:prune-batches --hours=48')->daily();

@@ -9,7 +9,7 @@
 @endphp
 
 @section('content')
-    <x-legal-page title="Privacy Policy">
+    <x-legal-page :crumbs="$crumbs ?? []" title="Privacy Policy">
         <p>
             This policy explains what {{ $siteName }} collects when you visit, why, and what you can do about it.
             We have tried to write it in plain language rather than legal filler.

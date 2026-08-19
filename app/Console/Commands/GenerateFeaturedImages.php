@@ -19,7 +19,9 @@ class GenerateFeaturedImages extends Command
         $force = (bool) $this->option('force');
 
         $posts = Post::query()
-            ->with('category:id,name,color', 'author:id,name')
+            // slug included: it is what chooses the picture strategy for the
+            // section, and a partial select without it throws under strict mode.
+            ->with('category:id,name,slug,color', 'author:id,name')
             ->when(! $force, fn ($query) => $query->whereNull('featured_image'))
             ->latest('id')
             ->limit(max(1, (int) $this->option('limit')))
