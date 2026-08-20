@@ -140,13 +140,14 @@
                          data-props="{{ json_encode(['title' => $post->title]) }}"></div>
                 </header>
 
-                {{-- A brand card is the headline, the section and the date drawn
-                     into a 1200x630 picture. Directly under the same headline in
-                     live text it said everything a second time, and cost the
-                     reader the largest download on the page to do it. It stays
-                     the og:image, which is the job it was made for; only a real
-                     photograph earns a place in the article body. --}}
-                @if($post->featured_image && ! str_contains($post->featured_image, '/cards/'))
+                {{-- Every kind of picture is shown, brand cards included.
+                     A brand card repeats the headline that is already above it,
+                     which is a cost worth naming: it is not an SEO problem - a
+                     page saying its own words twice is normal, and the version
+                     that counts is the live text - but it is a second reading of
+                     the same line. The article looked unfinished without it, and
+                     an article with no picture at all is the worse trade. --}}
+                @if($post->featured_image)
                     @php
                         // The credit the generator stored with the file: the
                         // photographer for a stock photo, the AI disclosure for
