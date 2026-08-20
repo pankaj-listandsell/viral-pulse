@@ -14,21 +14,71 @@
 @endsection
 
 @section('content')
+    {{-- Two rows, not one grid of eight identical boxes.
+         What the site is doing comes first and links somewhere; who is reading
+         it comes second. "Total posts" is gone: it repeated Published plus the
+         two counts beside it, so it spent a card restating its neighbours. --}}
     <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <x-ui.stat-card label="Total posts" :value="$stats['total_posts']" icon="file-text" color="brand" />
-        <x-ui.stat-card label="Published" :value="$stats['published_posts']" icon="check" color="green" />
-        <x-ui.stat-card label="Drafts" :value="$stats['draft_posts']" icon="pencil" color="gray" />
-        <x-ui.stat-card label="Scheduled" :value="$stats['scheduled_posts']" icon="calendar-clock" color="amber" />
-        <x-ui.stat-card label="Total views" :value="$stats['total_views']" icon="eye" color="blue" />
-        <x-ui.stat-card label="Users" :value="$stats['users']" icon="users" color="violet" />
-        <x-ui.stat-card label="Subscribers" :value="$stats['subscribers']" icon="mail" color="green" />
+        <x-ui.stat-card
+            label="Published"
+            :value="$stats['published_posts']"
+            icon="check"
+            color="green"
+            :href="Route::has('admin.posts.index') ? route('admin.posts.index', ['status' => 'published']) : null"
+            :hint="$stats['total_posts'].' in total'"
+        />
+        <x-ui.stat-card
+            label="Drafts"
+            :value="$stats['draft_posts']"
+            icon="pencil"
+            color="amber"
+            :href="Route::has('admin.posts.index') ? route('admin.posts.index', ['status' => 'draft']) : null"
+            :hint="$stats['draft_posts'] > 0 ? 'Waiting for review' : 'Nothing waiting'"
+        />
+        <x-ui.stat-card
+            label="Scheduled"
+            :value="$stats['scheduled_posts']"
+            icon="calendar-clock"
+            color="blue"
+            :href="Route::has('admin.scheduled.index') ? route('admin.scheduled.index') : null"
+            :hint="$stats['scheduled_posts'] > 0 ? 'Queued to publish' : 'Nothing queued'"
+        />
         <x-ui.stat-card
             label="AI generated"
             :value="$stats['ai_posts']"
             icon="bot"
             color="violet"
-            :hint="$stats['ai_generations'] . ' generations run'"
+            :href="Route::has('admin.ai.index') ? route('admin.ai.index') : null"
+            :hint="$stats['ai_generations'].' generations run'"
         />
+    </div>
+
+    {{-- Audience, as one quiet strip rather than three more cards. These
+         numbers are context for the ones above, not headlines of their own,
+         and giving them the same weight flattened the whole screen. --}}
+    <div class="mt-4 grid grid-cols-3 divide-x divide-gray-200 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:divide-gray-800 dark:border-gray-800 dark:bg-gray-900">
+        @foreach([
+            ['label' => 'Total views', 'value' => $stats['total_views'], 'icon' => 'eye'],
+            ['label' => 'Subscribers', 'value' => $stats['subscribers'], 'icon' => 'mail'],
+            ['label' => 'Users', 'value' => $stats['users'], 'icon' => 'users', 'href' => Route::has('admin.users.index') ? route('admin.users.index') : null],
+        ] as $item)
+            @php $tag = ($item['href'] ?? null) ? 'a' : 'div'; @endphp
+
+            <{{ $tag }} @if($item['href'] ?? null) href="{{ $item['href'] }}" @endif
+                class="flex items-center gap-3 px-4 py-3.5 transition {{ ($item['href'] ?? null) ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50' : '' }}">
+                <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                    <x-icon :name="$item['icon']" class="size-4.5" />
+                </span>
+                <span class="min-w-0">
+                    <span class="block text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ $item['label'] }}</span>
+                    <span @class([
+                        'block text-xl font-black tabular-nums tracking-tight',
+                        'text-gray-900 dark:text-gray-50' => (int) $item['value'] !== 0,
+                        'text-gray-300 dark:text-gray-700' => (int) $item['value'] === 0,
+                    ])>{{ number_format($item['value']) }}</span>
+                </span>
+            </{{ $tag }}>
+        @endforeach
     </div>
 
     @if($stats['pending_comments'] > 0 && Route::has('admin.comments.index'))

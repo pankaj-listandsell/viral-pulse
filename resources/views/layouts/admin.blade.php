@@ -54,13 +54,13 @@
         <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8">
             <div class="mx-auto max-w-7xl">
                 @hasSection('heading')
-                    <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <h1 class="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
+                    <header class="mb-7 flex flex-wrap items-end justify-between gap-3">
+                        <div class="min-w-0">
+                            <h1 class="text-2xl font-black tracking-tight text-gray-900 sm:text-[1.75rem] dark:text-gray-50">
                                 @yield('heading')
                             </h1>
                             @hasSection('subheading')
-                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">@yield('subheading')</p>
+                                <p class="mt-1.5 max-w-2xl text-sm leading-relaxed text-gray-500 dark:text-gray-400">@yield('subheading')</p>
                             @endif
                         </div>
 

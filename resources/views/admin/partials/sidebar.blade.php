@@ -58,11 +58,16 @@
 >
     <div class="flex h-16 shrink-0 items-center gap-2.5 border-b border-gray-200 px-4 dark:border-gray-800">
         <a href="{{ route('admin.dashboard') }}" class="flex min-w-0 items-center gap-2.5">
-            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-600 text-white">
+            <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-sm shadow-brand-600/30">
                 <x-icon name="flame" class="size-5" />
             </span>
-            <span x-show="!$store.sidebar.collapsed" class="truncate font-semibold tracking-tight" x-cloak>
-                {{ $siteSettings['site_name'] ?? config('app.name') }}
+            <span x-show="!$store.sidebar.collapsed" class="min-w-0" x-cloak>
+                <span class="block truncate text-sm font-black tracking-tight">
+                    {{ $siteSettings['site_name'] ?? config('app.name') }}
+                </span>
+                <span class="block text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">
+                    Admin
+                </span>
             </span>
         </a>
     </div>
@@ -77,7 +82,7 @@
                 @if($group['label'])
                     <p
                         x-show="!$store.sidebar.collapsed"
-                        class="mt-5 mb-1.5 px-3 text-[0.68rem] font-semibold tracking-wider text-gray-400 uppercase dark:text-gray-500"
+                        class="mt-6 mb-2 px-3 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500"
                         x-cloak
                     >{{ $group['label'] }}</p>
                 @endif
@@ -86,23 +91,31 @@
                     @foreach($visible as $item)
                         @php $active = request()->routeIs($item['route']); @endphp
                         <li>
+                            {{-- The current page is marked by a bar against the
+                                 edge as well as a tint. The tint alone vanishes
+                                 at a glance, and it is the only thing left to
+                                 read once the sidebar is collapsed to icons. --}}
                             <a
                                 href="{{ route($item['route']) }}"
                                 @class([
-                                    'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition',
-                                    'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-400' => $active,
-                                    'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' => ! $active,
+                                    'group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition',
+                                    'bg-brand-50 font-bold text-brand-700 dark:bg-brand-500/15 dark:text-brand-400' => $active,
+                                    'font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100' => ! $active,
                                 ])
                                 @if($active) aria-current="page" @endif
                                 :title="$store.sidebar.collapsed ? '{{ $item['label'] }}' : null"
                             >
+                                @if($active)
+                                    <span class="absolute -left-2 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-brand-600 dark:bg-brand-400" aria-hidden="true"></span>
+                                @endif
+
                                 <x-icon :name="$item['icon']" class="size-5 shrink-0" />
                                 <span x-show="!$store.sidebar.collapsed" class="truncate" x-cloak>{{ $item['label'] }}</span>
 
                                 @if(($item['badge'] ?? null) === 'unread_messages' && $unreadMessages > 0)
                                     <span
                                         x-show="!$store.sidebar.collapsed"
-                                        class="ml-auto rounded-full bg-brand-600 px-1.5 py-0.5 text-[0.65rem] font-semibold text-white"
+                                        class="ml-auto rounded-full bg-brand-600 px-1.5 py-0.5 text-[0.65rem] font-black text-white"
                                         x-cloak
                                     >{{ $unreadMessages > 99 ? '99+' : $unreadMessages }}</span>
                                 @endif
