@@ -29,8 +29,29 @@
 
             {{-- Web stories & horoscope strip, first thing on the page --}}
             @if(!empty($webStories) || !empty($activeSigns))
-                <div class="mb-8" data-island="StoryViewerModal" data-island-eager
-                     data-props="{{ json_encode(['stories' => $webStories, 'signs' => $activeSigns, 'todayHoroscopes' => $activeTodayHoroscopes, 'pageUrl' => route('horoscope')]) }}"></div>
+                <div class="mb-8 min-h-[140px]" data-island="StoryViewerModal" data-island-eager
+                     data-props="{{ json_encode(['stories' => $webStories, 'signs' => $activeSigns, 'todayHoroscopes' => $activeTodayHoroscopes, 'pageUrl' => route('horoscope')]) }}">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="flex size-7 items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-900 text-sm">
+                                    🔮
+                                </span>
+                                <div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-40"></div>
+                            </div>
+                        </div>
+                        <div class="relative w-full overflow-hidden py-1">
+                            <div class="flex items-center gap-4 sm:gap-5 pb-2 overflow-x-hidden">
+                                @foreach(range(1, 10) as $i)
+                                    <div class="flex-shrink-0 flex flex-col items-center gap-2">
+                                        <div class="size-20 sm:size-24 rounded-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800"></div>
+                                        <div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-12"></div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
             @endif
 
             {{-- ======================= HERO SLIDER ======================= --}}
@@ -179,8 +200,8 @@
                             </p>
                         @else
                             <div class="grid gap-6 sm:grid-cols-2">
-                                @foreach($latest as $post)
-                                    <x-post.card :post="$post" />
+                                @foreach($latest as $index => $post)
+                                    <x-post.card :post="$post" :eager="$index < 2" />
                                 @endforeach
                             </div>
                         @endif
