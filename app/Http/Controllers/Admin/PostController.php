@@ -36,6 +36,8 @@ class PostController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        app(\App\Services\MediaResolver::class)->preloadForPosts($posts);
+
         return view('admin.posts.index', [
             'posts' => $posts,
             'categories' => Category::ordered()->get(['id', 'name']),
@@ -176,5 +178,41 @@ class PostController extends Controller
         $count = $posts->count();
 
         return back()->with('success', "{$count} ".str('post')->plural($count).' updated.');
+    }
+
+    public function generateImage(Request $request, Post $post): \Illuminate\Http\JsonResponse
+    {
+        if ($request->filled('title')) {
+            $post->title = $request->string('title')->toString();
+        }
+
+        if ($request->has('tags')) {
+            $tags = $request->input('tags');
+            if (is_array($tags)) {
+                $post->setRelation('tags', collect($tags)->map(fn ($name) => new \App\Models\Tag(['name' => $name])));
+            }
+        }
+
+        $media = app(\App\Services\Images\AiIllustrationGenerator::class)->generate($post);
+
+        if ($media) {
+            $post->forceFill([
+                'featured_image' => $media->path,
+                'featured_image_alt' => $media->alt_text ?: \Illuminate\Support\Str::limit($post->title, 120, ''),
+            ])->save();
+
+            app(\App\Services\ContentFeedService::class)->flush();
+
+            return response()->json([
+                'success' => true,
+                'path' => $media->path,
+                'url' => $media->conversionUrl('thumbnail') ?? $media->url,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'error' => 'Failed to generate AI image. Please verify your OpenAI or Gemini API keys are configured correctly.',
+        ], 422);
     }
 }

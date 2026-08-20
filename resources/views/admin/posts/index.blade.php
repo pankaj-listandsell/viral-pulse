@@ -205,27 +205,46 @@
                                         />
                                     </td>
 
-                                    <td class="max-w-sm px-5 py-3">
-                                        <div class="flex items-center gap-2">
-                                            @if($post->trashed())
-                                                <span class="truncate font-medium text-gray-500 line-through">{{ $post->title }}</span>
-                                            @else
-                                                <a href="{{ route('admin.posts.edit', $post) }}"
-                                                   class="truncate font-medium hover:text-brand-600 dark:hover:text-brand-400">
-                                                    {{ $post->title }}
-                                                </a>
-                                            @endif
+                                    <td class="max-w-md px-5 py-3">
+                                        <div class="flex items-center gap-3">
+                                            @php
+                                                $media = app(\App\Services\MediaResolver::class)->find($post->featured_image);
+                                            @endphp
+                                            <div class="w-14 h-10 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50">
+                                                @if($media)
+                                                    <img src="{{ $media->conversionUrl('thumbnail') ?? $media->url }}" 
+                                                         alt="{{ $post->title }}" 
+                                                         class="h-full w-full object-cover">
+                                                @else
+                                                    <div class="flex h-full w-full items-center justify-center text-gray-400 dark:text-gray-600">
+                                                        <x-icon name="image" class="size-4" />
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-center gap-2">
+                                                    @if($post->trashed())
+                                                        <span class="truncate font-medium text-gray-500 line-through block">{{ $post->title }}</span>
+                                                    @else
+                                                        <a href="{{ route('admin.posts.edit', $post) }}"
+                                                           class="truncate font-medium hover:text-brand-600 dark:hover:text-brand-400 block"
+                                                           title="{{ $post->title }}">
+                                                            {{ $post->title }}
+                                                        </a>
+                                                    @endif
 
-                                            @if($post->ai_generated)
-                                                <x-ui.badge color="violet"><x-icon name="bot" class="size-3" />AI</x-ui.badge>
-                                            @endif
-                                            @if($post->is_featured)
-                                                <x-icon name="star" class="size-3.5 shrink-0 text-amber-500" />
-                                            @endif
+                                                    @if($post->ai_generated)
+                                                        <x-ui.badge color="violet" class="shrink-0"><x-icon name="bot" class="size-3" />AI</x-ui.badge>
+                                                    @endif
+                                                    @if($post->is_featured)
+                                                        <x-icon name="star" class="size-3.5 shrink-0 text-amber-500" />
+                                                    @endif
+                                                </div>
+                                                <p class="truncate text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                                    {{ $post->author?->name }} &middot; /{{ $post->slug }}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <p class="truncate text-xs text-gray-500 dark:text-gray-400">
-                                            {{ $post->author?->name }} &middot; /{{ $post->slug }}
-                                        </p>
                                     </td>
 
                                     <td class="hidden px-5 py-3 lg:table-cell">

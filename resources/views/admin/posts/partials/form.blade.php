@@ -13,6 +13,7 @@
         'value' => old('featured_image', $post->featured_image),
         'mediaEndpoint' => route('admin.media.index'),
         'uploadEndpoint' => route('admin.media.store'),
+        'generateEndpoint' => $editing ? route('admin.posts.generate-image', $post) : null,
     ];
     $tagProps = [
         'name' => 'tags',

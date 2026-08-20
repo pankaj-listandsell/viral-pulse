@@ -54,6 +54,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('{post}/schedule', 'schedule')->name('schedule');
         Route::post('{post}/restore', 'restore')->withTrashed()->name('restore');
         Route::delete('{post}/force', 'forceDelete')->withTrashed()->name('force-delete');
+        Route::post('{post}/generate-image', 'generateImage')->name('generate-image');
     });
 
     Route::resource('categories', CategoryController::class)->except('show');

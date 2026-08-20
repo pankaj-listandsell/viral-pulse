@@ -78,66 +78,6 @@
                         <p class="mt-4 text-lg leading-relaxed text-gray-600 dark:text-gray-400">{{ $post->excerpt }}</p>
                     @endif
 
-                    {{-- No personal byline. Articles here are drafted by AI and
-                         reviewed by an editor, so putting one staff member's
-                         name on every one of them would credit work they did
-                         not do. The Article schema names the publication as the
-                         author instead, which is both accurate and what the
-                         page shows. --}}
-                    <div class="mt-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-y border-gray-200 py-4 dark:border-gray-800">
-                        <div class="flex items-center gap-2.5">
-                            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-600 text-white">
-                                <x-icon name="flame" class="size-4" />
-                            </span>
-
-                            <div class="text-sm">
-                                <p class="font-bold text-gray-900 dark:text-white">
-                                    {{ $siteSettings['site_name'] ?? config('app.name') }}
-                                </p>
-                                <p class="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                    <time datetime="{{ $post->published_at?->toIso8601String() }}">
-                                        {{ $post->published_at?->format('j F Y') }}
-                                    </time>
-                                    @if($showUpdated)
-                                        <span aria-hidden="true">&middot;</span>
-                                        <span>Updated <time datetime="{{ $post->updated_at->toIso8601String() }}">{{ $post->updated_at->format('j F Y') }}</time></span>
-                                    @endif
-                                    @if($post->reading_time)
-                                        <span aria-hidden="true">&middot;</span>
-                                        <span>{{ $post->reading_time }} min read</span>
-                                    @endif
-                                </p>
-                            </div>
-                        </div>
-
-                        <span class="flex items-center gap-2">
-                            <span data-island="BookmarkButton" data-island-eager
-                                  data-props="{{ json_encode(['post' => ['id' => $post->id, 'title' => $post->title, 'slug' => $post->slug, 'category' => $post->category?->name, 'url' => route('posts.show', $post)]]) }}"></span>
-
-                            @if($settings->bool('likes_enabled', true))
-                                <span data-island="LikeButton" data-props="{{ json_encode($likeProps) }}">
-                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-500 dark:border-gray-800">
-                                        <x-icon name="star" class="size-4" />
-                                        {{ number_format($post->likes_count) }}
-                                    </span>
-                                </span>
-                            @endif
-
-                            <span class="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
-                                <x-icon name="eye" class="size-4" />
-                                {{ number_format($post->views_count) }}
-                            </span>
-                        </span>
-                    </div>
-
-                    {{-- The AI disclosure is not here. It sits with the
-                         publisher card at the end of the article: a reader who
-                         wants to know who made this and how finds both facts in
-                         one place, and the top of the story is the story. --}}
-
-                    {{-- Listen to Article Audio Player --}}
-                    <div data-island="AudioReader" data-island-eager
-                         data-props="{{ json_encode(['title' => $post->title]) }}"></div>
                 </header>
 
                 {{-- Every kind of picture is shown, brand cards included.
@@ -174,19 +114,66 @@
                     </figure>
                 @endif
 
-                {{-- Table of Contents (populated by JavaScript when the article has 2+ headings) --}}
-                <div id="article-toc" class="my-8 hidden rounded-2xl border border-gray-200 bg-gray-50/70 p-5 dark:border-gray-800 dark:bg-gray-900/40">
-                    <div class="flex cursor-pointer select-none items-center justify-between" id="toc-toggle">
-                        <div class="flex items-center gap-2 text-sm font-black text-gray-900 dark:text-white">
-                            <span class="text-base" aria-hidden="true">📑</span>
-                            <span>In this article</span>
+                {{-- No personal byline. Articles here are drafted by AI and
+                     reviewed by an editor, so putting one staff member's
+                     name on every one of them would credit work they did
+                     not do. The Article schema names the publication as the
+                     author instead, which is both accurate and what the
+                     page shows. --}}
+                <div class="mt-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-y border-gray-200 py-4 dark:border-gray-800">
+                    <div class="flex items-center gap-2.5">
+                        <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-600 text-white">
+                            <x-icon name="flame" class="size-4" />
+                        </span>
+
+                        <div class="text-sm">
+                            <p class="font-bold text-gray-900 dark:text-white">
+                                {{ $siteSettings['site_name'] ?? config('app.name') }}
+                            </p>
+                            <p class="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                <time datetime="{{ $post->published_at?->toIso8601String() }}">
+                                    {{ $post->published_at?->format('j F Y') }}
+                                </time>
+                                @if($showUpdated)
+                                    <span aria-hidden="true">&middot;</span>
+                                    <span>Updated <time datetime="{{ $post->updated_at->toIso8601String() }}">{{ $post->updated_at->format('j F Y') }}</time></span>
+                                @endif
+                                @if($post->reading_time)
+                                    <span aria-hidden="true">&middot;</span>
+                                    <span>{{ $post->reading_time }} min read</span>
+                                @endif
+                            </p>
                         </div>
-                        <svg id="toc-chevron" class="size-4 text-gray-400 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
                     </div>
-                    <nav id="toc-list" class="mt-4 space-y-2 border-t border-gray-200/60 pt-3 text-sm text-gray-600 dark:border-gray-800 dark:text-gray-300">
-                        <!-- Populated by JavaScript -->
-                    </nav>
+
+                    <span class="flex items-center gap-2">
+                        <span data-island="BookmarkButton" data-island-eager
+                              data-props="{{ json_encode(['post' => ['id' => $post->id, 'title' => $post->title, 'slug' => $post->slug, 'category' => $post->category?->name, 'url' => route('posts.show', $post)]]) }}"></span>
+
+                        @if($settings->bool('likes_enabled', true))
+                            <span data-island="LikeButton" data-props="{{ json_encode($likeProps) }}">
+                                <span class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-500 dark:border-gray-800">
+                                    <x-icon name="star" class="size-4" />
+                                    {{ number_format($post->likes_count) }}
+                                </span>
+                            </span>
+                        @endif
+
+                        <span class="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+                            <x-icon name="eye" class="size-4" />
+                            {{ number_format($post->views_count) }}
+                        </span>
+                    </span>
                 </div>
+
+                {{-- The AI disclosure is not here. It sits with the
+                     publisher card at the end of the article: a reader who
+                     wants to know who made this and how finds both facts in
+                     one place, and the top of the story is the story. --}}
+
+                {{-- Listen to Article Audio Player --}}
+                <div data-island="AudioReader" data-island-eager
+                     data-props="{{ json_encode(['title' => $post->title]) }}"></div>
 
                 {{-- Already sanitised on write, so it is safe to render as HTML.
                      Nothing untrusted reaches this point. --}}
@@ -208,6 +195,20 @@
                         @endforeach
                     </nav>
                 @endif
+
+                {{-- Table of Contents (populated by JavaScript when the article has 2+ headings) --}}
+                <div id="article-toc" class="my-8 hidden rounded-2xl border border-gray-200 bg-gray-50/70 p-5 dark:border-gray-800 dark:bg-gray-900/40">
+                    <div class="flex cursor-pointer select-none items-center justify-between" id="toc-toggle">
+                        <div class="flex items-center gap-2 text-sm font-black text-gray-900 dark:text-white">
+                            <span class="text-base" aria-hidden="true">📑</span>
+                            <span>In this article</span>
+                        </div>
+                        <svg id="toc-chevron" class="size-4 text-gray-400 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
+                    <nav id="toc-list" class="mt-4 space-y-2 border-t border-gray-200/60 pt-3 text-sm text-gray-600 dark:border-gray-800 dark:text-gray-300">
+                        <!-- Populated by JavaScript -->
+                    </nav>
+                </div>
 
                 {{-- Interactive Emoji Reaction Bar --}}
                 <div data-island="ReactionsBar" data-island-eager
