@@ -54,4 +54,48 @@ class GenerateDailyHoroscopeTest extends TestCase
                 && $job->categoryId === $category->id;
         });
     }
+
+    /**
+     * The schedule runs this every ten minutes across a morning window, because
+     * a task pinned to one exact minute is skipped for the day whenever a
+     * throttled cron does not wake during it. That only works if running twice
+     * writes one article.
+     */
+    public function test_a_second_run_on_the_same_day_writes_nothing(): void
+    {
+        Queue::fake();
+        config(['trending.automation.enabled' => true]);
+        User::factory()->admin()->create(['is_active' => true]);
+
+        $this->artisan('content:generate-daily-horoscope --force')->assertSuccessful();
+
+        $this->assertSame(1, AiGeneration::count());
+
+        // No --force: this is the scheduler's own repeat, ten minutes later.
+        $this->artisan('content:generate-daily-horoscope')
+            ->assertSuccessful()
+            ->expectsOutputToContain('Already generated');
+
+        $this->assertSame(1, AiGeneration::count());
+        Queue::assertPushed(GenerateAiContentJob::class, 1);
+    }
+
+    public function test_a_failed_attempt_does_not_block_the_rest_of_the_day(): void
+    {
+        Queue::fake();
+        config(['trending.automation.enabled' => true]);
+        User::factory()->admin()->create(['is_active' => true]);
+
+        $this->artisan('content:generate-daily-horoscope --force')->assertSuccessful();
+
+        // The morning's attempt died - a model outage, a quota wall. The next
+        // run has to pick the day up rather than treat it as already done.
+        AiGeneration::query()->update(['status' => \App\Enums\AiGenerationStatus::Failed]);
+
+        $this->artisan('content:generate-daily-horoscope')
+            ->assertSuccessful()
+            ->expectsOutputToContain('successfully queued');
+
+        $this->assertSame(2, AiGeneration::count());
+    }
 }

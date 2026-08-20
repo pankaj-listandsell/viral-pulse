@@ -2,9 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\AiGenerationStatus;
 use App\Enums\ContentTone;
 use App\Enums\ContentType;
 use App\Jobs\GenerateAiContentJob;
+use App\Models\AiGeneration;
 use App\Models\Category;
 use App\Models\User;
 use App\Services\AI\AiContentService;
@@ -57,7 +59,34 @@ class GenerateDailyHoroscope extends Command
         }
 
         $topic = "Daily Horoscope Predictions for All 12 Zodiac Signs on {$formattedDate}";
-        
+
+        /*
+         * Once a day, however often this is called.
+         *
+         * The schedule cannot rely on the scheduler waking during one exact
+         * minute: shared hosting throttles cron, and a task pinned to 05:00
+         * is simply skipped for the day when nothing runs at 05:00. So this is
+         * scheduled across a window and asked to run repeatedly, and this
+         * guard is what makes that safe - the first run of the day creates the
+         * article, the rest see it and stop.
+         *
+         * Failed and rejected attempts do not count, so a bad morning is
+         * retried rather than blocking the day.
+         */
+        $existing = AiGeneration::where('topic', $topic)
+            ->whereIn('status', [
+                AiGenerationStatus::Pending,
+                AiGenerationStatus::Processing,
+                AiGenerationStatus::Completed,
+            ])
+            ->first();
+
+        if ($existing && ! $this->option('force')) {
+            $this->info("Already generated for {$formattedDate} (generation #{$existing->id}, {$existing->status->value}).");
+
+            return self::SUCCESS;
+        }
+
         $extraContext = <<<CONTEXT
 Generate a comprehensive, highly engaging, and structured daily horoscope forecast for all 12 zodiac signs: Aries, Taurus, Gemini, Cancer, Leo, Virgo, Libra, Scorpio, Sagittarius, Capricorn, Aquarius, and Pisces.
 

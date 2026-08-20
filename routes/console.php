@@ -66,10 +66,19 @@ Schedule::command('data:cleanup')
     ->dailyAt('03:00')
     ->withoutOverlapping(120);
 
-// Generate comprehensive daily horoscope articles every morning at 5:00 AM.
+// The morning horoscope, tried repeatedly between 05:00 and 10:00 rather than
+// pinned to 05:00 exactly.
+//
+// dailyAt() only fires if the scheduler happens to wake during that one
+// minute. Shared hosting throttles cron - on this host a */5 entry was
+// observed running twice in 45 minutes - so a task pinned to a single minute
+// is quietly skipped for the whole day. Repeating across a window means the
+// next time cron does wake, the article gets written; the command's own
+// once-a-day guard stops it writing a second one.
 Schedule::command('content:generate-daily-horoscope')
-    ->dailyAt('05:00')
-    ->withoutOverlapping(60);
+    ->everyTenMinutes()
+    ->between('05:00', '10:00')
+    ->withoutOverlapping(30);
 
 // Keeps the queue bookkeeping tables from growing without bound. Failed jobs
 // are kept a month, which is long enough to investigate a pattern.
