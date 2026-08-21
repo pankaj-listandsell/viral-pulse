@@ -14,6 +14,8 @@
         'mediaEndpoint' => route('admin.media.index'),
         'uploadEndpoint' => route('admin.media.store'),
         'generateEndpoint' => $editing ? route('admin.posts.generate-image', $post) : null,
+        'pexelsSearchEndpoint' => $editing ? route('admin.posts.pexels.search', $post) : null,
+        'pexelsSelectEndpoint' => $editing ? route('admin.posts.pexels.select', $post) : null,
     ];
     $tagProps = [
         'name' => 'tags',

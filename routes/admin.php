@@ -55,6 +55,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('{post}/restore', 'restore')->withTrashed()->name('restore');
         Route::delete('{post}/force', 'forceDelete')->withTrashed()->name('force-delete');
         Route::post('{post}/generate-image', 'generateImage')->name('generate-image');
+        Route::get('{post}/pexels/search', 'searchPexels')->name('pexels.search');
+        Route::post('{post}/pexels/select', 'selectPexels')->name('pexels.select');
     });
 
     Route::resource('categories', CategoryController::class)->except('show');

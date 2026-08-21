@@ -147,29 +147,20 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="mb-10 space-y-8 select-none">
+    <div class="mb-6 space-y-6 select-none">
         
         <!-- 1. AUTO-LOOPING DAILY HOROSCOPE & ZODIAC CAROUSEL -->
         <section v-if="hasHoroscopes" class="overflow-hidden" aria-label="Daily Horoscope Carousel">
-            <div class="mb-3.5 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <span class="flex size-7 items-center justify-center rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white text-sm shadow-sm">
-                        🔮
-                    </span>
-                    <div>
-                        <h3 class="text-sm sm:text-base font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
-                            <span>Daily Horoscope & Zodiac</span>
-                            <span class="rounded-full bg-purple-100 dark:bg-purple-950/60 px-2.5 py-0.5 text-[10px] font-extrabold text-purple-700 dark:text-purple-300">
-                                Today
-                            </span>
-                        </h3>
-                    </div>
-                </div>
-
+            <!--
+                No heading over the strip. Twelve labelled zodiac faces say what
+                this is faster than a line of text can, and the row sits at the
+                very top of the page where every pixel of height pushes the news
+                further down.
+            -->
+            <div v-if="pageUrl" class="mb-2 flex justify-end">
                 <a
-                    v-if="pageUrl"
                     :href="pageUrl"
-                    class="inline-flex items-center gap-1 text-xs font-bold text-purple-600 hover:text-purple-700 dark:text-purple-400 group"
+                    class="group inline-flex items-center gap-1 text-xs font-bold text-purple-600 hover:text-purple-700 dark:text-purple-400"
                 >
                     <span>Full Forecast</span>
                     <span class="transition-transform group-hover:translate-x-0.5">&rarr;</span>
@@ -185,7 +176,7 @@ onBeforeUnmount(() => {
                 @touchend.passive="isLoopPaused = false"
             >
                 <div
-                    class="horoscope-auto-track flex items-center gap-4 sm:gap-5 pb-2"
+                    class="horoscope-auto-track flex items-center gap-4 sm:gap-5"
                     :class="{ 'is-paused': isLoopPaused }"
                 >
                     <div

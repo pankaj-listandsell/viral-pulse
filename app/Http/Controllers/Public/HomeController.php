@@ -30,8 +30,13 @@ class HomeController extends Controller
         // put it in the slider instead. A section labelled latest has to show
         // the latest, and the slider is a separate promotion of the same
         // stories - which is how every newsroom front page works.
-        $latest = $this->feed->latest(8);
+        $latest = $this->feed->latest(6);
         $trending = $this->feed->trending(6);
+
+        // Section blocks, the thing that makes a front page read like a
+        // newsroom rather than one long list: a few busy categories, each
+        // showing its own latest. Two queries for all of them.
+        $sections = $this->feed->sections(categories: 4, perCategory: 5);
 
         $signs = $this->horoscope->signs();
         $todayHoroscopes = [];
@@ -45,12 +50,17 @@ class HomeController extends Controller
         // here even though the page repeats a headline between the slider and
         // the feed: an ItemList naming the same URL at two positions describes
         // a list that does not exist.
-        $indexed = $heroSlides->concat($latest)->unique('id')->values();
+        $indexed = $heroSlides
+            ->concat($latest)
+            ->concat($sections->flatMap(fn (array $section) => $section['posts']))
+            ->unique('id')
+            ->values();
 
         return view('public.home', [
             'heroSlides' => $heroSlides,
             'hero' => $heroSlides->first() ?? $this->feed->hero(),
             'latest' => $latest,
+            'sections' => $sections,
             'trending' => $trending,
             'featured' => $this->feed->featured(4),
             'signs' => $signs,

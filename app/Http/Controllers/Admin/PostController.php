@@ -215,4 +215,131 @@ class PostController extends Controller
             'error' => 'Failed to generate AI image. Please verify your OpenAI or Gemini API keys are configured correctly.',
         ], 422);
     }
+
+    public function searchPexels(Request $request, Post $post): \Illuminate\Http\JsonResponse
+    {
+        $config = config('site.media.stock');
+
+        if (blank($config['key'] ?? null)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Pexels API Key is not configured.',
+            ], 422);
+        }
+
+        $query = $request->string('query')->trim()->toString();
+        if ($query === '') {
+            if ($request->filled('title')) {
+                $post->title = $request->string('title')->toString();
+            }
+            if ($request->has('tags')) {
+                $tags = $request->input('tags');
+                if (is_array($tags)) {
+                    $post->setRelation('tags', collect($tags)->map(fn ($name) => new \App\Models\Tag(['name' => $name])));
+                }
+            }
+            $query = app(\App\Services\Images\StockPhotoGenerator::class)->query($post);
+        }
+
+        if ($query === '') {
+            return response()->json([
+                'success' => true,
+                'query' => '',
+                'photos' => [],
+            ]);
+        }
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(15)
+                ->withHeaders(['Authorization' => $config['key']])
+                ->get($config['endpoint'], [
+                    'query' => $query,
+                    'orientation' => 'landscape',
+                    'per_page' => 15,
+                ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Pexels API request failed: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        if (! $response->successful()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Pexels API returned status code ' . $response->status(),
+            ], 422);
+        }
+
+        $photos = collect($response->json('photos', []))->map(function ($photo) {
+            return [
+                'id' => $photo['id'],
+                'url' => $photo['src']['medium'] ?? $photo['src']['large'] ?? '',
+                'original' => $photo['src']['large2x'] ?? $photo['src']['large'] ?? $photo['src']['original'] ?? '',
+                'photographer' => $photo['photographer'] ?? 'Pexels',
+                'alt' => $photo['alt'] ?: '',
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'query' => $query,
+            'photos' => $photos,
+        ]);
+    }
+
+    public function selectPexels(Request $request, Post $post): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'photo' => 'required|array',
+            'photo.original' => 'required|string',
+            'photo.photographer' => 'nullable|string',
+            'photo.alt' => 'nullable|string',
+        ]);
+
+        $photo = $request->input('photo');
+
+        $temporary = null;
+        try {
+            $body = \Illuminate\Support\Facades\Http::timeout(30)->get($photo['original'])->throw()->body();
+
+            $temporary = tempnam(sys_get_temp_dir(), 'stock').'.jpg';
+            file_put_contents($temporary, $body);
+
+            $media = app(\App\Services\MediaService::class)->store(
+                new \Illuminate\Http\UploadedFile($temporary, \Illuminate\Support\Str::slug(\Illuminate\Support\Str::limit($post->title, 60, '')).'.jpg', 'image/jpeg', null, true),
+                $post->author ?? auth()->user(),
+                'stock',
+            );
+
+            $media->forceFill([
+                'caption' => 'Photo by '.($photo['photographer'] ?? 'Pexels').' on Pexels',
+                'alt_text' => \Illuminate\Support\Str::limit($photo['alt'] ?: $post->title, 120, ''),
+            ])->save();
+
+            $post->forceFill([
+                'featured_image' => $media->path,
+                'featured_image_alt' => $media->alt_text,
+            ])->save();
+
+            app(\App\Services\ContentFeedService::class)->flush();
+
+            return response()->json([
+                'success' => true,
+                'path' => $media->path,
+                'url' => $media->conversionUrl('thumbnail') ?? $media->url,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Stock photo could not be selected', ['post' => $post->id, 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to download and select Pexels image: ' . $e->getMessage(),
+            ], 422);
+        } finally {
+            if ($temporary && is_file($temporary)) {
+                @unlink($temporary);
+            }
+        }
+    }
 }

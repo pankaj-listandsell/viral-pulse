@@ -84,7 +84,15 @@ class ImageStrategyTest extends TestCase
 
     public function test_illustrations_are_skipped_when_no_key_is_configured(): void
     {
-        config(['site.media.illustration.key' => null]);
+        // Both providers, because the generator tries OpenAI first and falls
+        // back to Gemini. Nulling one alone still reaches for the other.
+        config([
+            'site.media.illustration.key' => null,
+            'ai.providers.gemini.key' => null,
+            'ai.providers.openai.key' => null,
+        ]);
+        putenv('OPENAI_API_KEY=');
+
         Http::fake();
 
         $this->assertNull(app(AiIllustrationGenerator::class)->generate($this->postIn('astrology')));
@@ -129,14 +137,21 @@ class ImageStrategyTest extends TestCase
 
     public function test_an_illustration_carries_its_disclosure_and_refuses_real_people(): void
     {
+        // Gemini only: OpenAI is tried first, so it is switched off to keep the
+        // test on one path.
         config([
+            'ai.providers.openai.key' => null,
+            'ai.providers.gemini.key' => 'test-key',
             'site.media.illustration.key' => 'test-key',
-            'site.media.illustration.model' => 'imagen-test',
+            'site.media.illustration.model' => 'gemini-image-test',
         ]);
+        putenv('OPENAI_API_KEY=');
 
         Http::fake([
-            '*:predict' => Http::response([
-                'predictions' => [['bytesBase64Encoded' => base64_encode($this->png())]],
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [[
+                    'content' => ['parts' => [['inlineData' => ['data' => base64_encode($this->png())]]]],
+                ]],
             ]),
         ]);
 
@@ -146,12 +161,14 @@ class ImageStrategyTest extends TestCase
         $this->assertSame(AiIllustrationGenerator::CREDIT, $media->caption);
         $this->assertStringContainsString('/illustrations/', $media->path);
 
+        // The instruction that keeps this honest: whatever comes back must not
+        // be a photograph of a real person, and must carry no text of its own.
         Http::assertSent(function (Request $request) {
-            $prompt = $request['instances'][0]['prompt'];
+            $prompt = $request['contents'][0]['parts'][0]['text'] ?? '';
 
-            return $request['parameters']['personGeneration'] === 'dont_allow'
-                && str_contains($prompt, 'no real or recognisable people')
-                && str_contains($prompt, 'No text');
+            return str_contains($prompt, 'no real or recognisable people')
+                && str_contains($prompt, 'No text')
+                && str_contains($prompt, 'not photorealistic');
         });
     }
 

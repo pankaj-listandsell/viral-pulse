@@ -71,7 +71,7 @@ class StockPhotoGenerator implements FeaturedImageGenerator
      * Tags first: an editor tagging a post has already decided what it is
      * about, which is a better signal than anything derived from a headline.
      */
-    private function query(Post $post): string
+    public function query(Post $post): string
     {
         $tags = $post->tags->pluck('name')->take(2)->implode(' ');
 

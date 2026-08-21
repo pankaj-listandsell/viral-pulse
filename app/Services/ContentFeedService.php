@@ -7,6 +7,7 @@ use App\Models\Post;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -193,6 +194,46 @@ class ContentFeedService
     }
 
     /**
+     * The front page's section blocks: a few busy categories, each with its
+     * own most recent stories.
+     *
+     * Two queries however many sections are asked for. The obvious version -
+     * loop the categories and query each one - is what turns a newsroom front
+     * page into thirty queries, and it grows every time a section is added.
+     *
+     * @return SupportCollection<int, array{category: Category, posts: Collection<int, Post>}>
+     */
+    public function sections(int $categories = 4, int $perCategory = 5): SupportCollection
+    {
+        return Cache::remember("feed.sections.{$categories}.{$perCategory}", self::TTL, function () use ($categories, $perCategory) {
+            $chosen = $this->popularCategories($categories);
+
+            if ($chosen->isEmpty()) {
+                return collect();
+            }
+
+            // Enough rows to fill every section even when one category holds
+            // most of them, then grouped in PHP.
+            $posts = $this->withImages(
+                $this->base()
+                    ->whereIn('category_id', $chosen->pluck('id'))
+                    ->orderByDesc('published_at')
+                    ->limit($chosen->count() * $perCategory * 3)
+                    ->get()
+            )->groupBy('category_id');
+
+            return $chosen
+                ->map(fn (Category $category) => [
+                    'category' => $category,
+                    'posts' => ($posts[$category->id] ?? collect())->take($perCategory)->values(),
+                ])
+                // A section with nothing under it is a heading and a hole.
+                ->filter(fn (array $section) => $section['posts']->isNotEmpty())
+                ->values();
+        });
+    }
+
+    /**
      * The header navigation, cached separately because it appears on every
      * single page.
      *
@@ -238,6 +279,13 @@ class ContentFeedService
             Cache::forget("feed.featured.{$limit}");
             Cache::forget("feed.popular.{$limit}");
             Cache::forget("feed.categories.{$limit}");
+
+            // Two dimensions, so cleared as a pair. A section block still
+            // showing yesterday's lead after a publish is the bug this
+            // prevents.
+            foreach ([4, 5, 6] as $perCategory) {
+                Cache::forget("feed.sections.{$limit}.{$perCategory}");
+            }
         }
     }
 }
