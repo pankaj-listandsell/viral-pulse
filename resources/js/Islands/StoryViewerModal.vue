@@ -147,7 +147,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="mb-6 space-y-6 select-none">
+    <div class="mb-4 space-y-4 select-none">
         
         <!-- 1. AUTO-LOOPING DAILY HOROSCOPE & ZODIAC CAROUSEL -->
         <section v-if="hasHoroscopes" class="overflow-hidden" aria-label="Daily Horoscope Carousel">
@@ -157,7 +157,7 @@ onBeforeUnmount(() => {
                 very top of the page where every pixel of height pushes the news
                 further down.
             -->
-            <div v-if="pageUrl" class="mb-2 flex justify-end">
+            <div v-if="pageUrl" class="mb-1 flex justify-end">
                 <a
                     :href="pageUrl"
                     class="group inline-flex items-center gap-1 text-xs font-bold text-purple-600 hover:text-purple-700 dark:text-purple-400"
@@ -169,7 +169,7 @@ onBeforeUnmount(() => {
 
             <!-- Auto-Looping Marquee Track Container with Smooth Fade Edges -->
             <div
-                class="relative w-full overflow-hidden py-1 before:pointer-events-none before:absolute before:left-0 before:top-0 before:z-10 before:h-full before:w-6 sm:before:w-10 before:bg-gradient-to-r before:from-white dark:before:from-gray-950 after:pointer-events-none after:absolute after:right-0 after:top-0 after:z-10 after:h-full after:w-6 sm:after:w-10 after:bg-gradient-to-l after:from-white dark:after:from-gray-950"
+                class="relative w-full overflow-hidden before:pointer-events-none before:absolute before:left-0 before:top-0 before:z-10 before:h-full before:w-6 sm:before:w-10 before:bg-gradient-to-r before:from-white dark:before:from-gray-950 after:pointer-events-none after:absolute after:right-0 after:top-0 after:z-10 after:h-full after:w-6 sm:after:w-10 after:bg-gradient-to-l after:from-white dark:after:from-gray-950"
                 @mouseenter="isLoopPaused = true"
                 @mouseleave="isLoopPaused = false"
                 @touchstart.passive="isLoopPaused = true"
@@ -187,7 +187,7 @@ onBeforeUnmount(() => {
                     >
                         <!-- Glowing Gradient Ring with Sign Illustration -->
                         <div
-                            class="relative size-20 sm:size-24 rounded-full p-[2.5px] transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl shadow-md"
+                            class="relative size-16 sm:size-20 rounded-full p-[2px] transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl shadow-md"
                             :style="{ background: `linear-gradient(135deg, ${sign.color}, #a855f7, #6366f1)` }"
                         >
                             <div class="relative size-full overflow-hidden rounded-full border border-white/20 bg-[#0d0d21]">
@@ -201,7 +201,7 @@ onBeforeUnmount(() => {
                         </div>
 
                         <!-- Sign Name & Vedic Title -->
-                        <span class="mt-2 text-center text-xs sm:text-sm font-black text-gray-800 dark:text-gray-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition">
+                        <span class="mt-1.5 text-center text-xs font-black text-gray-800 dark:text-gray-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition">
                             {{ sign.name }}
                         </span>
                         <span class="text-[10px] sm:text-[11px] font-bold text-gray-400 dark:text-gray-500">

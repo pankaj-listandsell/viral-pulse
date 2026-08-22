@@ -116,7 +116,33 @@
                 </select>
             </div>
 
-            @if(request('category') || request('source') || request('search'))
+            {{-- Created between. Both ends optional, so "everything since the
+                 first" and "everything up to the tenth" both work. --}}
+            <div class="flex w-full items-center gap-1.5 sm:w-auto">
+                <label for="filter-from" class="text-xs font-semibold text-gray-500 dark:text-gray-400">Created</label>
+                <input
+                    id="filter-from"
+                    type="date"
+                    name="from"
+                    value="{{ $filters['from'] ?? '' }}"
+                    max="{{ now()->toDateString() }}"
+                    onchange="this.form.submit()"
+                    aria-label="Created on or after"
+                    class="rounded-lg border border-gray-200 bg-gray-50/50 px-2.5 py-1.5 text-xs font-medium text-gray-700 transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-200"
+                >
+                <span class="text-xs text-gray-400">to</span>
+                <input
+                    type="date"
+                    name="to"
+                    value="{{ $filters['to'] ?? '' }}"
+                    max="{{ now()->toDateString() }}"
+                    onchange="this.form.submit()"
+                    aria-label="Created on or before"
+                    class="rounded-lg border border-gray-200 bg-gray-50/50 px-2.5 py-1.5 text-xs font-medium text-gray-700 transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-200"
+                >
+            </div>
+
+            @if(request('category') || request('source') || request('search') || request('from') || request('to'))
                 <a href="{{ route('admin.posts.index', array_filter(['status' => request('status'), 'trashed' => request('trashed')])) }}"
                    class="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-600 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                     <x-icon name="x" class="size-3" />
@@ -190,7 +216,8 @@
                                 <th scope="col" class="hidden px-5 py-3 font-medium lg:table-cell">Category</th>
                                 <th scope="col" class="px-5 py-3 font-medium">Status</th>
                                 <th scope="col" class="hidden px-5 py-3 font-medium sm:table-cell">Views</th>
-                                <th scope="col" class="hidden px-5 py-3 font-medium md:table-cell">Updated</th>
+                                <th scope="col" class="hidden px-5 py-3 font-medium md:table-cell">Created</th>
+                                <th scope="col" class="hidden px-5 py-3 font-medium lg:table-cell">Updated</th>
                                 <th scope="col" class="px-5 py-3"><span class="sr-only">Actions</span></th>
                             </tr>
                         </thead>
@@ -267,7 +294,20 @@
                                         {{ number_format($post->views_count) }}
                                     </td>
 
+                                    {{-- The exact moment, not "3 days ago".
+                                         This column is read when checking what
+                                         the scheduler wrote overnight, and for
+                                         that the clock time is the answer. --}}
                                     <td class="hidden px-5 py-3 text-gray-500 md:table-cell dark:text-gray-400">
+                                        <span class="block whitespace-nowrap font-medium text-gray-700 dark:text-gray-300">
+                                            {{ $post->created_at->format('j M Y') }}
+                                        </span>
+                                        <span class="block whitespace-nowrap text-xs tabular-nums">
+                                            {{ $post->created_at->format('g:i A') }}
+                                        </span>
+                                    </td>
+
+                                    <td class="hidden px-5 py-3 text-gray-500 lg:table-cell dark:text-gray-400">
                                         {{ $post->updated_at->diffForHumans() }}
                                     </td>
 

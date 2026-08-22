@@ -32,6 +32,12 @@ class PostController extends Controller
                     : $query->where('ai_generated', false);
             })
             ->when($request->boolean('trashed'), fn ($query) => $query->onlyTrashed())
+            // Written on or after this date, and on or before that one. Both
+            // ends are inclusive and compared as dates, so "to 20 August"
+            // includes everything written that day rather than stopping at
+            // midnight and hiding the whole day's work.
+            ->when($request->filled('from'), fn ($query) => $query->whereDate('created_at', '>=', $request->date('from')))
+            ->when($request->filled('to'), fn ($query) => $query->whereDate('created_at', '<=', $request->date('to')))
             ->latest('updated_at')
             ->paginate(20)
             ->withQueryString();
@@ -46,7 +52,7 @@ class PostController extends Controller
                 ->groupBy('status')
                 ->pluck('total', 'status'),
             'trashedCount' => Post::onlyTrashed()->count(),
-            'filters' => $request->only('search', 'status', 'category', 'source', 'trashed'),
+            'filters' => $request->only('search', 'status', 'category', 'source', 'trashed', 'from', 'to'),
         ]);
     }
 

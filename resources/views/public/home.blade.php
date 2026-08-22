@@ -25,7 +25,7 @@
 @section('content')
     <div class="bg-white dark:bg-gray-950">
 
-        <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+        <div class="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-6">
 
             {{-- Web stories & horoscope strip, first thing on the page --}}
             @if(!empty($webStories) || !empty($activeSigns))
@@ -33,16 +33,16 @@
                      below does not jump down when the island mounts. It has to
                      match the real thing: same avatar size, same gaps, same
                      header row. --}}
-                <div class="mb-6" data-island="StoryViewerModal" data-island-eager
+                <div class="mb-4" data-island="StoryViewerModal" data-island-eager
                      data-props="{{ json_encode(['stories' => $webStories, 'signs' => $activeSigns, 'todayHoroscopes' => $activeTodayHoroscopes, 'pageUrl' => route('horoscope')]) }}">
-                    <div class="mb-2 flex justify-end">
+                    <div class="mb-1 flex justify-end">
                         <div class="h-4 w-24 rounded bg-gray-100 dark:bg-gray-900"></div>
                     </div>
-                    <div class="relative w-full overflow-hidden py-1">
+                    <div class="relative w-full overflow-hidden">
                         <div class="flex items-center gap-4 overflow-x-hidden sm:gap-5">
                             @foreach(range(1, 10) as $i)
                                 <div class="flex flex-shrink-0 flex-col items-center gap-2">
-                                    <div class="size-20 rounded-full border border-gray-100 bg-gray-50 sm:size-24 dark:border-gray-800 dark:bg-gray-900"></div>
+                                    <div class="size-16 rounded-full border border-gray-100 bg-gray-50 sm:size-20 dark:border-gray-800 dark:bg-gray-900"></div>
                                     <div class="h-3 w-12 rounded bg-gray-100 dark:bg-gray-900"></div>
                                     <div class="h-2 w-8 rounded bg-gray-100 dark:bg-gray-900"></div>
                                 </div>
