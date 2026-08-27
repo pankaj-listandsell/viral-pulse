@@ -1,5 +1,16 @@
 @php
     $nav = app(\App\Services\ContentFeedService::class)->navigation();
+
+    /*
+     * Outfit and Instrument Sans carry no Devanagari glyphs. Left alone, a
+     * Hindi page falls back to whatever the device happens to have - Nirmala UI
+     * on Windows, something else on Android - and the page reads as an
+     * afterthought. A locale that needs its own face names it in config, and
+     * only that locale pays to download it.
+     */
+    $localeMeta = app(\App\Services\LocaleService::class)->meta();
+    $localeFont = $localeMeta['font'] ?? null;
+    $localeFontStack = $localeMeta['font_stack'] ?? null;
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full scroll-smooth">
@@ -11,7 +22,7 @@
     <x-seo.head :seo="$seo ?? []" />
 
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
-    <link href="https://fonts.bunny.net/css?family=outfit:300,400,500,600,700|instrument-sans:400,500,600,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.bunny.net/css?family=outfit:300,400,500,600,700|instrument-sans:400,500,600,700{{ $localeFont ? '|'.$localeFont : '' }}&display=swap" rel="stylesheet">
 
     <link rel="alternate" type="application/rss+xml"
           title="{{ $siteSettings['site_name'] ?? config('app.name') }}" href="{{ url('feed.xml') }}">
@@ -61,6 +72,19 @@
     @stack('head')
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    @if($localeFontStack)
+        {{-- After @vite on purpose: this has to win over the --font-sans that
+             Tailwind's @theme block emits onto :root. The Latin faces stay in
+             the stack behind it so digits, brand names and any English left on
+             a Hindi page still render in the site's own type. --}}
+        <style>
+            :root {
+                --font-sans: "{{ $localeFontStack }}", 'Outfit', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+                    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+            }
+        </style>
+    @endif
 </head>
 <body class="flex h-full flex-col bg-white font-sans text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100">
 

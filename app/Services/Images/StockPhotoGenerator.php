@@ -50,19 +50,63 @@ class StockPhotoGenerator implements FeaturedImageGenerator
             return null;
         }
 
-        $query = $this->query($post);
+        $queries = $this->getSearchQueries($post);
 
-        if ($query === '') {
+        if (empty($queries)) {
             return null;
         }
 
-        $photo = $this->search($query, $config);
+        $photo = null;
+        foreach ($queries as $query) {
+            $photo = $this->search($query, $config);
+            if ($photo) {
+                break;
+            }
+        }
 
         if (! $photo) {
             return null;
         }
 
         return $this->download($photo, $post);
+    }
+
+    /**
+     * Get search queries to try in sequence on Pexels, ordered from most specific to broadest fallback.
+     *
+     * @return array<int, string>
+     */
+    public function getSearchQueries(Post $post): array
+    {
+        $queries = [];
+
+        // 1. Specific query (tags + category, or first 3 words of title)
+        $primary = $this->query($post);
+        if (filled($primary)) {
+            $queries[] = $primary;
+        }
+
+        // 2. Just the tags (if they exist)
+        $tags = $post->tags->pluck('name')->take(2)->implode(' ');
+        if (filled($tags)) {
+            $queries[] = trim($tags);
+        }
+
+        // 3. Category name alone (e.g. "business", "technology")
+        if ($post->category?->name) {
+            $queries[] = Str::lower($post->category->name);
+        }
+
+        // 4. First 2 non-noise words of the title
+        $words = collect(preg_split('/[^\p{L}\p{N}]+/u', Str::lower($post->title), -1, PREG_SPLIT_NO_EMPTY))
+            ->reject(fn (string $word) => in_array($word, self::NOISE, true) || mb_strlen($word) < 3);
+
+        if ($words->isNotEmpty()) {
+            $queries[] = $words->take(2)->implode(' ');
+            $queries[] = $words->first();
+        }
+
+        return array_values(array_unique(array_filter(array_map('trim', $queries))));
     }
 
     /**

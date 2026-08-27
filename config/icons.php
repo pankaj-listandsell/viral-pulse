@@ -30,6 +30,11 @@ return [
     'log-out' => '<path d="m16 17 5-5-5-5" /><path d="M21 12H9" /><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />',
     'chevron-down' => '<path d="m6 9 6 6 6-6" />',
     'chevron-right' => '<path d="m9 18 6-6-6-6" />',
+    'chevron-up' => '<path d="m18 15-6-6-6 6" />',
+    // The neutral state of a sortable column header: both arrows, so a column
+    // that can be sorted looks different from one that cannot even before it
+    // is clicked.
+    'chevrons-up-down' => '<path d="m7 15 5 5 5-5" /><path d="m7 9 5-5 5 5" />',
     'eye' => '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" />',
     'eye-off' => '<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" />',
     'trending-up' => '<path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" />',

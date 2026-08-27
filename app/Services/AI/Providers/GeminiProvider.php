@@ -31,6 +31,33 @@ class GeminiProvider implements AiProvider
      */
     public function generate(GenerationRequest $request, string $systemPrompt, string $userPrompt): array
     {
+        $result = $this->call($systemPrompt, $userPrompt, $this->schema());
+
+        return [...$result, 'payload' => $this->parser->parse($result['raw'])];
+    }
+
+    /**
+     * @param  array<string, mixed>  $schema
+     * @return array{payload: array<string, mixed>, model: string, prompt_tokens: int, completion_tokens: int, raw: string}
+     */
+    public function generateJson(string $systemPrompt, string $userPrompt, array $schema, string $name = 'result'): array
+    {
+        // `name` is unused here: Gemini identifies the schema by its shape and
+        // has no field to label it with. OpenAI does, which is why the contract
+        // carries one.
+        $result = $this->call($systemPrompt, $userPrompt, $this->toGeminiSchema($schema));
+
+        return [...$result, 'payload' => $this->parser->decode($result['raw'])];
+    }
+
+    /**
+     * The single round trip, shared by both entry points above.
+     *
+     * @param  array<string, mixed>  $schema  Already in Gemini's dialect.
+     * @return array{payload: array<string, mixed>, model: string, prompt_tokens: int, completion_tokens: int, raw: string}
+     */
+    private function call(string $systemPrompt, string $userPrompt, array $schema): array
+    {
         $url = rtrim($this->config['endpoint'], '/')."/models/{$this->model()}:generateContent";
 
         try {
@@ -47,7 +74,7 @@ class GeminiProvider implements AiProvider
                         // Constrains the model to the schema, so the response
                         // is parseable JSON rather than prose wrapping JSON.
                         'responseMimeType' => 'application/json',
-                        'responseSchema' => $this->schema(),
+                        'responseSchema' => $schema,
                     ],
                 ]);
         } catch (ConnectionException $e) {
@@ -70,7 +97,7 @@ class GeminiProvider implements AiProvider
         }
 
         if ($finish === 'MAX_TOKENS') {
-            throw AiGenerationException::retryable('The article was cut off before it finished. Try a shorter target length.');
+            throw AiGenerationException::retryable('The response was cut off before it finished. Try asking for less in one call.');
         }
 
         $text = collect($candidate['content']['parts'] ?? [])
@@ -85,7 +112,9 @@ class GeminiProvider implements AiProvider
         $usage = $body['usageMetadata'] ?? [];
 
         return [
-            'payload' => $this->parser->parse($text),
+            // Left empty here: the caller decides how to read the text, because
+            // an article and a horoscope are validated very differently.
+            'payload' => [],
             'model' => $body['modelVersion'] ?? $this->model(),
             'prompt_tokens' => (int) ($usage['promptTokenCount'] ?? 0),
             'completion_tokens' => (int) ($usage['candidatesTokenCount'] ?? 0),
@@ -114,6 +143,43 @@ class GeminiProvider implements AiProvider
             ),
             default => AiGenerationException::permanent("Gemini rejected the request ({$status}): {$message}"),
         };
+    }
+
+    /**
+     * Ordinary JSON Schema into Gemini's dialect.
+     *
+     * Callers write lowercase types and `additionalProperties` like everyone
+     * else; this walks the tree, uppercases the types, drops the keys Gemini
+     * rejects, and adds the `propertyOrdering` it wants in place of relying on
+     * key order. Recursive, so nested objects and arrays convert too.
+     *
+     * @param  array<string, mixed>  $schema
+     * @return array<string, mixed>
+     */
+    private function toGeminiSchema(array $schema): array
+    {
+        $converted = [];
+
+        foreach ($schema as $key => $value) {
+            $converted[$key] = match (true) {
+                $key === 'type' && is_string($value) => strtoupper($value),
+                $key === 'properties' && is_array($value) => array_map(
+                    fn (array $property): array => $this->toGeminiSchema($property),
+                    $value
+                ),
+                $key === 'items' && is_array($value) => $this->toGeminiSchema($value),
+                default => $value,
+            };
+        }
+
+        // Gemini rejects the request outright if this is present.
+        unset($converted['additionalProperties']);
+
+        if (isset($converted['properties']) && is_array($converted['properties'])) {
+            $converted['propertyOrdering'] = array_keys($converted['properties']);
+        }
+
+        return $converted;
     }
 
     /**

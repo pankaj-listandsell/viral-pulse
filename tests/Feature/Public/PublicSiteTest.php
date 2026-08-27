@@ -165,7 +165,10 @@ class PublicSiteTest extends TestCase
     {
         $response = $this->get(route('horoscope'))->assertOk();
 
-        $response->assertSee('Daily Horoscope & Rashifal', false);
+        // &amp; rather than a bare &: the headline now comes from a translation
+        // string through Blade's escaping, which is what a raw ampersand in
+        // HTML should always have been.
+        $response->assertSee('Daily Horoscope &amp; Rashifal', false);
         $response->assertSee('ZodiacHoroscopeWidget');
         $response->assertSee('Aries');
         $response->assertSee('Pisces');

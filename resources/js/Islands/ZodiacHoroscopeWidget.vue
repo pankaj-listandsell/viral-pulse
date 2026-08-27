@@ -12,6 +12,38 @@ const props = defineProps({
     pageUrl: { type: String, default: () => (typeof window !== 'undefined' ? window.location.href : '') },
     compatibilityUrl: { type: String, default: '' },
     today: { type: String, default: '' },
+    /*
+     * Every word this island prints, already translated.
+     *
+     * Passed in rather than looked up here: the translations live in PHP, and
+     * shipping a copy of the dictionary to the browser to save one prop would
+     * be the wrong trade. The defaults keep the island usable if it is ever
+     * mounted without them.
+     */
+    labels: {
+        type: Object,
+        default: () => ({
+            all12: 'All 12',
+            elements: { Fire: 'Fire', Earth: 'Earth', Air: 'Air', Water: 'Water' },
+            areas: { love: 'Love', career: 'Career', money: 'Money', health: 'Health' },
+            findHeading: 'Find your sign in one tap',
+            findIntro: 'Enter your date of birth, or pick a sign from the wheel below.',
+            findButton: 'Find my sign',
+            pickAnother: 'Pick another sign',
+            energy: 'Energy',
+            luckyNumber: 'Lucky number',
+            luckyColor: 'Lucky colour',
+            luckyTime: 'Lucky time',
+            mood: 'Mood',
+            shareWhatsApp: 'Share on WhatsApp',
+            copyReading: 'Copy reading',
+            copied: 'Copied',
+            checkLoveMatch: 'Check love match',
+            finderError: 'That date did not match a sign — pick yours below.',
+            shareHoroscopeFormat: '🔮 {sign} horoscope for {date}',
+            readYours: 'Read yours:',
+        }),
+    },
 });
 
 const STORAGE_KEY = 'vp:zodiac-sign';
@@ -22,20 +54,24 @@ const birthDate = ref('');
 const finderError = ref('');
 const copied = ref(false);
 
-const elements = [
-    { key: 'all', label: 'All 12', icon: '✦' },
-    { key: 'Fire', label: 'Fire', icon: '🔥' },
-    { key: 'Earth', label: 'Earth', icon: '🌿' },
-    { key: 'Air', label: 'Air', icon: '💨' },
-    { key: 'Water', label: 'Water', icon: '💧' },
-];
+/*
+ * The element key stays English because that is what a sign's `element` field
+ * is matched against; only the label beside it is translated.
+ */
+const elements = computed(() => [
+    { key: 'all', label: props.labels.all12, icon: '✦' },
+    { key: 'Fire', label: props.labels.elements.Fire, icon: '🔥' },
+    { key: 'Earth', label: props.labels.elements.Earth, icon: '🌿' },
+    { key: 'Air', label: props.labels.elements.Air, icon: '💨' },
+    { key: 'Water', label: props.labels.elements.Water, icon: '💧' },
+]);
 
-const areas = [
-    { key: 'love', label: 'Love', icon: '💖', bar: 'bg-rose-500' },
-    { key: 'career', label: 'Career', icon: '💼', bar: 'bg-indigo-500' },
-    { key: 'money', label: 'Money', icon: '💰', bar: 'bg-amber-500' },
-    { key: 'health', label: 'Health', icon: '🌿', bar: 'bg-emerald-500' },
-];
+const areas = computed(() => [
+    { key: 'love', label: props.labels.areas.love, icon: '💖', bar: 'bg-rose-500' },
+    { key: 'career', label: props.labels.areas.career, icon: '💼', bar: 'bg-indigo-500' },
+    { key: 'money', label: props.labels.areas.money, icon: '💰', bar: 'bg-amber-500' },
+    { key: 'health', label: props.labels.areas.health, icon: '🌿', bar: 'bg-emerald-500' },
+]);
 
 const visibleSigns = computed(() => Object.entries(props.signs)
     .filter(([, sign]) => element.value === 'all' || sign.element === element.value));
@@ -84,7 +120,7 @@ function findFromBirthDate() {
     const found = signFromDate(birthDate.value);
 
     if (!found) {
-        finderError.value = 'That date did not match a sign — pick yours below.';
+        finderError.value = props.labels.finderError ?? 'That date did not match a sign — pick yours below.';
         return;
     }
 
@@ -109,10 +145,14 @@ function clear() {
 
 function shareText() {
     const h = reading.value;
+    const format = props.labels.shareHoroscopeFormat ?? '🔮 {sign} horoscope for {date}';
+    const heading = format
+        .replace('{sign}', sign.value.name)
+        .replace('{date}', props.today || h.date);
 
-    return `🔮 ${sign.value.name} horoscope for ${props.today || h.date}\n\n${h.overview}\n\n`
-        + `🔢 Lucky number: ${h.lucky_number}\n🎨 Lucky colour: ${h.lucky_color}\n💫 Energy: ${h.score}%\n\n`
-        + `Read yours: ${props.pageUrl}`;
+    return `${heading}\n\n${h.overview}\n\n`
+        + `🔢 ${props.labels.luckyNumber ?? 'Lucky number'}: ${h.lucky_number}\n🎨 ${props.labels.luckyColor ?? 'Lucky colour'}: ${h.lucky_color}\n💫 ${props.labels.energy ?? 'Energy'}: ${h.score}%\n\n`
+        + `${props.labels.readYours ?? 'Read yours:'} ${props.pageUrl}`;
 }
 
 function shareWhatsApp() {
@@ -159,10 +199,10 @@ onMounted(() => {
         <div class="flex flex-col gap-4 border-b border-gray-200 bg-gray-50/80 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6 dark:border-gray-800 dark:bg-gray-900/60">
             <div>
                 <h3 class="text-lg font-black tracking-tight text-gray-900 dark:text-white">
-                    Find your sign in one tap
+                    {{ labels.findHeading }}
                 </h3>
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Enter your date of birth, or pick a sign from the wheel below.
+                    {{ labels.findIntro }}
                 </p>
             </div>
 
@@ -178,7 +218,7 @@ onMounted(() => {
                     type="submit"
                     class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-black text-white transition hover:bg-violet-600 active:scale-95 dark:bg-white dark:text-gray-900 dark:hover:bg-violet-500 dark:hover:text-white"
                 >
-                    Find my sign
+                    {{ labels.findButton }}
                 </button>
             </form>
         </div>
@@ -213,9 +253,9 @@ onMounted(() => {
                             {{ sign.vedic }} · {{ sign.dates }}
                         </p>
                         <p class="mt-2 flex flex-wrap gap-1.5">
-                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-gray-600 dark:bg-gray-800 dark:text-gray-300">{{ sign.element }}</span>
-                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-gray-600 dark:bg-gray-800 dark:text-gray-300">{{ sign.quality }}</span>
-                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-gray-600 dark:bg-gray-800 dark:text-gray-300">{{ sign.planet }}</span>
+                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-gray-600 dark:bg-gray-800 dark:text-gray-300">{{ sign.element_label ?? sign.element }}</span>
+                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-gray-600 dark:bg-gray-800 dark:text-gray-300">{{ sign.quality_label ?? sign.quality }}</span>
+                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-gray-600 dark:bg-gray-800 dark:text-gray-300">{{ sign.planet_label ?? sign.planet }}</span>
                         </p>
                     </div>
                 </div>
@@ -233,7 +273,7 @@ onMounted(() => {
                     </svg>
                     <div class="absolute inset-0 flex flex-col items-center justify-center">
                         <span class="text-xl font-black text-gray-900 dark:text-white">{{ reading.score }}%</span>
-                        <span class="text-[9px] font-black uppercase tracking-wider text-gray-400">Energy</span>
+                        <span class="text-[9px] font-black uppercase tracking-wider text-gray-400">{{ labels.energy ?? 'Energy' }}</span>
                     </div>
                 </div>
             </div>
@@ -267,19 +307,19 @@ onMounted(() => {
             <!-- Lucky details -->
             <dl class="relative mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-gray-200 bg-gray-200 sm:grid-cols-4 dark:border-gray-800 dark:bg-gray-800">
                 <div class="bg-white px-3 py-2.5 dark:bg-gray-900">
-                    <dt class="text-[10px] font-black uppercase tracking-wider text-gray-400">Lucky number</dt>
+                    <dt class="text-[10px] font-black uppercase tracking-wider text-gray-400">{{ labels.luckyNumber ?? 'Lucky number' }}</dt>
                     <dd class="mt-0.5 text-sm font-black text-gray-900 dark:text-white">#{{ reading.lucky_number }}</dd>
                 </div>
                 <div class="bg-white px-3 py-2.5 dark:bg-gray-900">
-                    <dt class="text-[10px] font-black uppercase tracking-wider text-gray-400">Lucky colour</dt>
+                    <dt class="text-[10px] font-black uppercase tracking-wider text-gray-400">{{ labels.luckyColor ?? 'Lucky colour' }}</dt>
                     <dd class="mt-0.5 truncate text-sm font-black text-gray-900 dark:text-white">{{ reading.lucky_color }}</dd>
                 </div>
                 <div class="bg-white px-3 py-2.5 dark:bg-gray-900">
-                    <dt class="text-[10px] font-black uppercase tracking-wider text-gray-400">Lucky time</dt>
+                    <dt class="text-[10px] font-black uppercase tracking-wider text-gray-400">{{ labels.luckyTime ?? 'Lucky time' }}</dt>
                     <dd class="mt-0.5 truncate text-sm font-black text-gray-900 dark:text-white">{{ reading.lucky_time }}</dd>
                 </div>
                 <div class="bg-white px-3 py-2.5 dark:bg-gray-900">
-                    <dt class="text-[10px] font-black uppercase tracking-wider text-gray-400">Mood</dt>
+                    <dt class="text-[10px] font-black uppercase tracking-wider text-gray-400">{{ labels.mood ?? 'Mood' }}</dt>
                     <dd class="mt-0.5 truncate text-sm font-black text-gray-900 dark:text-white">{{ reading.mood }}</dd>
                 </div>
             </dl>
@@ -291,28 +331,28 @@ onMounted(() => {
                     class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white transition hover:bg-emerald-500 active:scale-95"
                     @click="shareWhatsApp"
                 >
-                    <span aria-hidden="true">📲</span> Share on WhatsApp
+                    <span aria-hidden="true">📲</span> {{ labels.shareWhatsApp ?? 'Share on WhatsApp' }}
                 </button>
                 <button
                     type="button"
                     class="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 px-4 py-2.5 text-xs font-bold text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                     @click="copyReading"
                 >
-                    {{ copied ? '✓ Copied' : 'Copy reading' }}
+                    {{ copied ? (labels.copied ?? 'Copied') : (labels.copyReading ?? 'Copy reading') }}
                 </button>
                 <a
                     v-if="compatibilityUrl"
                     :href="`${compatibilityUrl}?sign1=${sign.slug}&sign2=${sign.best_matches?.[0] ?? 'leo'}`"
                     class="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 px-4 py-2.5 text-xs font-bold text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10"
                 >
-                    <span aria-hidden="true">💖</span> Check love match
+                    <span aria-hidden="true">💖</span> {{ labels.checkLoveMatch ?? 'Check love match' }}
                 </a>
                 <button
                     type="button"
                     class="ml-auto text-xs font-bold text-gray-500 underline-offset-4 transition hover:text-violet-600 hover:underline dark:text-gray-400 dark:hover:text-violet-400"
                     @click="clear"
                 >
-                    Pick another sign
+                    {{ labels.pickAnother }}
                 </button>
             </div>
         </div>

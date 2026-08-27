@@ -3,6 +3,22 @@
     $logo = $siteSettings['site_logo'] ?? null;
     $horoscopeEnabled = $siteSettings['horoscope_enabled'] ?? true;
 
+    // Locale-aware, for the same reason as the header: route('horoscope') is
+    // the English path whatever language the reader is in.
+    $locales = app(\App\Services\LocaleService::class);
+    $horoscopeUrl = $locales->horoscopeUrl('hub');
+    $compatibilityUrl = $locales->horoscopeUrl('compatibility');
+
+    /*
+     * The other language's horoscope hub, linked from the footer of every page
+     * on the site.
+     *
+     * The sitemap and the hreflang tags both announce the Hindi section, but
+     * neither is a link. This is - and a section with no ordinary internal
+     * links pointing into it is one Google is slow to trust and slow to crawl.
+     */
+    $otherLocales = collect($locales->switcher('hub'))->reject(fn (array $l): bool => $l['current'])->values();
+
     $socials = array_filter([
         'Facebook' => $siteSettings['social_facebook'] ?? null,
         'X' => $siteSettings['social_twitter'] ?? null,
@@ -83,8 +99,16 @@
                     <li><a href="{{ route('latest') }}" class="text-gray-600 transition hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">Latest</a></li>
                     <li><a href="{{ route('trending') }}" class="text-gray-600 transition hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">Trending</a></li>
                     @if($horoscopeEnabled)
-                        <li><a href="{{ route('horoscope') }}" class="flex items-center gap-1 text-gray-600 transition hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400"><span aria-hidden="true">✨</span> Horoscope</a></li>
-                        <li><a href="{{ route('horoscope.compatibility') }}" class="flex items-center gap-1 text-gray-600 transition hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400"><span aria-hidden="true">💖</span> Love match</a></li>
+                        <li><a href="{{ $horoscopeUrl }}" class="flex items-center gap-1 text-gray-600 transition hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400"><span aria-hidden="true">✨</span> {{ __('horoscope.seo.breadcrumb_horoscope') }}</a></li>
+                        <li><a href="{{ $compatibilityUrl }}" class="flex items-center gap-1 text-gray-600 transition hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400"><span aria-hidden="true">💖</span> {{ __('horoscope.seo.breadcrumb_compatibility') }}</a></li>
+                        @foreach($otherLocales as $other)
+                            <li>
+                                <a href="{{ $other['url'] }}" hreflang="{{ $other['code'] }}" lang="{{ $other['code'] }}"
+                                   class="flex items-center gap-1 text-gray-600 transition hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">
+                                    <span aria-hidden="true">🌐</span> {{ $other['native'] }}
+                                </a>
+                            </li>
+                        @endforeach
                     @endif
                     <li><a href="{{ route('sitemap.page') }}" class="text-gray-600 transition hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">Sitemap</a></li>
                 </ul>

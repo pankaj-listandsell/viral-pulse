@@ -218,6 +218,38 @@ class ImageStrategyTest extends TestCase
         $this->assertNull($post->og_image);
     }
 
+    public function test_pexels_falls_back_to_broader_queries_when_initial_query_fails(): void
+    {
+        config([
+            'site.media.stock.key' => 'test-key',
+            'site.media.stock.min_width' => 1200,
+        ]);
+
+        Http::fake([
+            'api.pexels.com/*' => Http::sequence()
+                ->push(['photos' => []])
+                ->push([
+                    'photos' => [[
+                        'width' => 2000,
+                        'photographer' => 'Fallback Photographer',
+                        'alt' => 'A broader photo',
+                        'src' => ['large2x' => 'https://images.pexels.com/fallback-photo.jpg'],
+                    ]],
+                ]),
+            'images.pexels.com/*' => Http::response($this->jpeg()),
+        ]);
+
+        $post = $this->postIn('business', ['title' => 'Sensex falls by 500 points on Monday afternoon']);
+
+        $media = app(StockPhotoGenerator::class)->generate($post);
+
+        $this->assertNotNull($media);
+        $this->assertSame('Photo by Fallback Photographer on Pexels', $media->caption);
+        $this->assertStringContainsString('/stock/', $media->path);
+
+        Http::assertSentCount(3);
+    }
+
     private function jpeg(): string
     {
         $image = imagecreatetruecolor(1600, 900);

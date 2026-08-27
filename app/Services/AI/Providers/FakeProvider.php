@@ -24,6 +24,9 @@ class FakeProvider implements AiProvider
     /** @var array<string, mixed>|null */
     private ?array $payload = null;
 
+    /** @var callable|null */
+    private $factory = null;
+
     public function name(): string
     {
         return 'fake';
@@ -57,6 +60,25 @@ class FakeProvider implements AiProvider
     public function willReturn(array $payload): self
     {
         $this->payload = $payload;
+
+        // A fixed payload is the more specific instruction, so it replaces any
+        // factory already set rather than losing silently to it.
+        $this->factory = null;
+
+        return $this;
+    }
+
+    /**
+     * Build the structured payload from the call itself.
+     *
+     * willReturn() is enough when a test knows the exact answer it wants, but
+     * a caller that asks for one shape per batch - the horoscope writer asks
+     * for a different set of signs each time - needs the answer to depend on
+     * the request. The factory receives the prompts, the schema and the name.
+     */
+    public function willReturnUsing(callable $factory): self
+    {
+        $this->factory = $factory;
 
         return $this;
     }
@@ -98,6 +120,67 @@ class FakeProvider implements AiProvider
             'completion_tokens' => 1200,
             'raw' => json_encode($payload),
         ];
+    }
+
+    /**
+     * Structured output, scripted the same way as generate().
+     *
+     * Without willReturn() this builds a payload from the schema itself, so a
+     * test can exercise a caller end to end without having to hand-write a
+     * fixture for whatever shape that caller happens to ask for.
+     *
+     * @param  array<string, mixed>  $schema
+     * @return array{payload: array<string, mixed>, model: string, prompt_tokens: int, completion_tokens: int, raw: string}
+     */
+    public function generateJson(string $systemPrompt, string $userPrompt, array $schema, string $name = 'result'): array
+    {
+        $this->calls[] = [
+            'request' => null,
+            'system' => $systemPrompt,
+            'user' => $userPrompt,
+            'schema' => $schema,
+            'name' => $name,
+        ];
+
+        if ($this->throw) {
+            throw $this->throw;
+        }
+
+        $payload = match (true) {
+            $this->factory !== null => ($this->factory)($systemPrompt, $userPrompt, $schema, $name),
+            $this->payload !== null => $this->payload,
+            default => $this->payloadFromSchema($schema),
+        };
+
+        return [
+            'payload' => $payload,
+            'model' => $this->model(),
+            'prompt_tokens' => 400,
+            'completion_tokens' => 900,
+            'raw' => json_encode($payload),
+        ];
+    }
+
+    /**
+     * A value for every property the schema declares, typed correctly.
+     *
+     * @param  array<string, mixed>  $schema
+     */
+    private function payloadFromSchema(array $schema): mixed
+    {
+        if (! empty($schema['enum'])) {
+            return $schema['enum'][0];
+        }
+
+        return match ($schema['type'] ?? 'string') {
+            'object' => collect($schema['properties'] ?? [])
+                ->map(fn (array $property): mixed => $this->payloadFromSchema($property))
+                ->all(),
+            'array' => [$this->payloadFromSchema($schema['items'] ?? ['type' => 'string'])],
+            'integer', 'number' => 77,
+            'boolean' => true,
+            default => 'Fake structured value long enough to look like real copy.',
+        };
     }
 
     /**

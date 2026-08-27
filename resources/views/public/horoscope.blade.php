@@ -30,6 +30,9 @@
         ->map(fn (array $sign) => \Illuminate\Support\Arr::only($sign, [
             'slug', 'name', 'vedic', 'symbol', 'dates', 'range',
             'element', 'quality', 'planet', 'color', 'image', 'best_matches',
+            // The untranslated keys above drive the filter and the matches;
+            // these are what the island actually prints.
+            'element_label', 'quality_label', 'planet_label',
         ]))
         ->all();
 
@@ -39,6 +42,24 @@
             'lucky_number', 'lucky_color', 'lucky_time', 'mood', 'score', 'scores',
         ]))
         ->all();
+
+    /*
+     * Locale-aware URLs.
+     *
+     * route('horoscope.compatibility') always resolves to the English path, so
+     * a Hindi reader following it would be dropped back into English mid-visit
+     * - and a crawler would read the Hindi page as linking out of its own
+     * language section. Everything internal goes through LocaleService, which
+     * keeps the reader in the language the URL promised.
+     */
+    $locales = app(\App\Services\LocaleService::class);
+    $hubUrl = $locales->horoscopeUrl('hub');
+    $compatibilityUrl = $locales->horoscopeUrl('compatibility');
+    $signUrl = fn (string $slug): string => $locales->horoscopeUrl('sign', $slug);
+    $pairUrl = fn (string $a, string $b): string => $locales->horoscopeUrl('compatibility', null, null, [
+        'sign1' => $locales->signSlug($a),
+        'sign2' => $locales->signSlug($b),
+    ]);
 
     $elementBadge = [
         'Fire' => 'bg-orange-500/15 text-orange-300 border-orange-400/30',
@@ -91,12 +112,19 @@
 
         <div class="relative mx-auto max-w-6xl px-4 pt-6 pb-14 sm:px-6 sm:pt-8 sm:pb-18">
 
-            {{-- Breadcrumb --}}
-            <nav aria-label="Breadcrumb" class="mb-8 flex items-center gap-2 text-xs font-semibold text-white/50">
-                <a href="{{ route('home') }}" class="transition hover:text-white">Home</a>
-                <span aria-hidden="true">&rsaquo;</span>
-                <span class="text-white/90">Horoscope</span>
-            </nav>
+            {{-- Breadcrumb, with the language switch beside it.
+                 The footer carries a link into the other language on every page
+                 of the site, but a reader who is already on the horoscope page
+                 should not have to scroll to the bottom to find it. --}}
+            <div class="mb-8 flex flex-wrap items-center justify-between gap-3">
+                <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs font-semibold text-white/50">
+                    <a href="{{ route('home') }}" class="transition hover:text-white">{{ __('horoscope.seo.breadcrumb_home') }}</a>
+                    <span aria-hidden="true">&rsaquo;</span>
+                    <span class="text-white/90">{{ __('horoscope.seo.breadcrumb_horoscope') }}</span>
+                </nav>
+
+                <x-language-switcher :links="$switcher" tone="dark" />
+            </div>
 
             <div class="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr]">
 
@@ -107,47 +135,44 @@
                             <span class="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                             <span class="relative inline-flex size-1.5 rounded-full bg-emerald-400"></span>
                         </span>
-                        Updated <time datetime="{{ $today->toDateString() }}">{{ $today->format('l, j F Y') }}</time>
+                        {{ __('horoscope.ui.updated_label') }} <time datetime="{{ $today->toDateString() }}">{{ $today->translatedFormat('l, j F Y') }}</time>
                     </p>
 
                     <h1 class="mt-5 text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-                        Daily Horoscope & Rashifal
+                        {{ __('horoscope.ui.hub_h1') }}
                         <span class="mt-2 block bg-gradient-to-r from-violet-300 via-fuchsia-200 to-amber-200 bg-clip-text text-transparent">
-                            for all 12 zodiac signs
+                            {{ __('horoscope.ui.hub_h1_accent') }}
                         </span>
                     </h1>
 
                     <p class="mt-5 max-w-xl text-base leading-relaxed text-white/70">
-                        Today's reading for every sign — from <strong class="font-semibold text-white">Aries</strong> to
-                        <strong class="font-semibold text-white">Pisces</strong> — with the mood of the day, your lucky
-                        number and colour, and what the stars say about love, career, money and health. Free, and rewritten
-                        every midnight.
+                        {{ __('horoscope.ui.hub_hero_intro') }}
                     </p>
 
                     <div class="mt-8 flex flex-wrap items-center gap-3">
                         <a href="#pick-your-sign"
                            class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-3.5 text-sm font-black shadow-lg shadow-violet-900/50 transition hover:from-violet-500 hover:to-fuchsia-500 active:scale-95">
-                            Read my sign
+                            {{ __('horoscope.ui.read_my_sign') }}
                             <span aria-hidden="true">&darr;</span>
                         </a>
-                        <a href="{{ route('horoscope.compatibility') }}"
+                        <a href="{{ $compatibilityUrl }}"
                            class="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-bold text-white backdrop-blur transition hover:bg-white/10">
-                            <span aria-hidden="true">💖</span> Love match calculator
+                            <span aria-hidden="true">💖</span> {{ __('horoscope.seo.compat_title') }}
                         </a>
                     </div>
 
                     <dl class="mt-10 grid max-w-md grid-cols-3 gap-4 border-t border-white/10 pt-6 text-center">
                         <div>
-                            <dt class="text-[11px] font-bold uppercase tracking-wider text-white/45">Signs</dt>
+                            <dt class="text-[11px] font-bold uppercase tracking-wider text-white/45">{{ __('horoscope.ui.stat_signs') }}</dt>
                             <dd class="mt-1 text-2xl font-black">12</dd>
                         </div>
                         <div>
-                            <dt class="text-[11px] font-bold uppercase tracking-wider text-white/45">Refreshed</dt>
-                            <dd class="mt-1 text-2xl font-black">Daily</dd>
+                            <dt class="text-[11px] font-bold uppercase tracking-wider text-white/45">{{ __('horoscope.ui.stat_refreshed') }}</dt>
+                            <dd class="mt-1 text-2xl font-black">{{ __('horoscope.ui.stat_daily') }}</dd>
                         </div>
                         <div>
-                            <dt class="text-[11px] font-bold uppercase tracking-wider text-white/45">Cost</dt>
-                            <dd class="mt-1 text-2xl font-black">Free</dd>
+                            <dt class="text-[11px] font-bold uppercase tracking-wider text-white/45">{{ __('horoscope.ui.stat_cost') }}</dt>
+                            <dd class="mt-1 text-2xl font-black">{{ __('horoscope.ui.stat_free') }}</dd>
                         </div>
                     </dl>
                 </div>
@@ -161,15 +186,20 @@
                     {{-- Wheel hub --}}
                     <div class="absolute left-1/2 top-1/2 flex size-32 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-white/15 bg-white/5 text-center backdrop-blur-xl">
                         <span class="text-2xl" aria-hidden="true">🔮</span>
-                        <span class="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/50">Today</span>
+                        <span class="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/50">{{ __('horoscope.ui.today') }}</span>
                         <span class="text-sm font-black">{{ $today->format('j M') }}</span>
                     </div>
 
                     @foreach($ring as $node)
-                        <a href="#{{ $node['slug'] }}"
+                        {{-- The wheel points at the twelve sign pages, not at
+                             anchors further down this one. Those pages are the
+                             ones that have to rank for "<sign> horoscope
+                             today", and the wheel is the most prominent set of
+                             internal links pointing anywhere on this site. --}}
+                        <a href="{{ $signUrl($node['slug']) }}"
                            style="left: {{ $node['x'] }}%; top: {{ $node['y'] }}%;"
                            class="group absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1"
-                           title="{{ $node['sign']['name'] }} horoscope today">
+                           title="{{ __('horoscope.seo.sign_heading', ['name' => $node['sign']['name']]) }}">
                             <span class="size-14 overflow-hidden rounded-full border border-white/20 bg-[#0d0b24] p-0.5 shadow-lg transition duration-300 group-hover:scale-110 lg:size-16"
                                   style="box-shadow: 0 0 22px -6px {{ $node['sign']['color'] }};">
                                 <img src="{{ $node['sign']['image'] }}" alt="{{ $node['sign']['name'] }} zodiac sign"
@@ -187,7 +217,7 @@
     <nav aria-label="Jump to a zodiac sign"
          class="sticky top-16 z-30 border-b border-gray-200 bg-white/85 backdrop-blur dark:border-gray-800 dark:bg-gray-950/85">
         <div class="vp-rail mx-auto flex max-w-6xl items-center gap-1.5 overflow-x-auto px-4 py-2.5 sm:px-6">
-            <span class="shrink-0 pr-1 text-[11px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">Jump to</span>
+            <span class="shrink-0 pr-1 text-[11px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">{{ __('horoscope.ui.jump_to') }}</span>
             @foreach($signs as $slug => $sign)
                 <a href="#{{ $slug }}"
                    class="flex shrink-0 items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-gray-700 transition hover:border-violet-400 hover:text-violet-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-violet-500 dark:hover:text-violet-400">
@@ -203,22 +233,50 @@
 
             {{-- ======================= INTERACTIVE PICKER ======================= --}}
             <section id="pick-your-sign" class="scroll-mt-32" aria-labelledby="picker-heading">
-                <h2 id="picker-heading" class="sr-only">Find and read your zodiac sign</h2>
+                <h2 id="picker-heading" class="sr-only">{{ __('horoscope.ui.picker_heading') }}</h2>
                 <div
                     data-island="ZodiacHoroscopeWidget"
                     data-island-eager
                     data-props="{{ json_encode([
                         'signs' => $islandSigns,
                         'todayHoroscopes' => $islandReadings,
-                        'pageUrl' => route('horoscope'),
-                        'compatibilityUrl' => route('horoscope.compatibility'),
-                        'today' => $today->format('l, j F Y'),
+                        'pageUrl' => $hubUrl,
+                        'compatibilityUrl' => $compatibilityUrl,
+                        'today' => $today->translatedFormat('l, j F Y'),
+                        'labels' => [
+                            'all12' => __('horoscope.ui.all_12'),
+                            // Keyed by the untranslated element, which is what
+                            // the island filters on.
+                            'elements' => collect($elements)->map(fn (array $e): string => $e['name'])->all(),
+                            'areas' => [
+                                'love' => __('horoscope.ui.love_short'),
+                                'career' => __('horoscope.ui.career_short'),
+                                'money' => __('horoscope.ui.money_short'),
+                                'health' => __('horoscope.ui.health_short'),
+                            ],
+                            'findHeading' => __('horoscope.ui.find_sign_heading'),
+                            'findIntro' => __('horoscope.ui.find_sign_intro'),
+                            'findButton' => __('horoscope.ui.find_my_sign'),
+                            'pickAnother' => __('horoscope.ui.pick_another_sign'),
+                            'energy' => __('horoscope.ui.energy_label'),
+                            'luckyNumber' => __('horoscope.ui.lucky_number_label'),
+                            'luckyColor' => __('horoscope.ui.lucky_color_label'),
+                            'luckyTime' => __('horoscope.ui.lucky_time_label'),
+                            'mood' => __('horoscope.ui.mood_label'),
+                            'shareWhatsApp' => __('horoscope.ui.share_whatsapp'),
+                            'copyReading' => __('horoscope.ui.copy_reading'),
+                            'copied' => __('horoscope.ui.copied'),
+                            'checkLoveMatch' => __('horoscope.ui.check_love_match'),
+                            'finderError' => __('horoscope.ui.finder_error'),
+                            'shareHoroscopeFormat' => __('horoscope.ui.share_horoscope_format'),
+                            'readYours' => __('horoscope.ui.read_yours'),
+                        ],
                     ]) }}"
                 >
                     {{-- Server-rendered fallback: the picker is an enhancement,
                          the twelve readings below are the page. --}}
                     <p class="rounded-3xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
-                        Choose your sign from the list below to read today's forecast.
+                        {{ __('horoscope.ui.picker_fallback') }}
                     </p>
                 </div>
             </section>
@@ -228,16 +286,17 @@
                 <div class="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-gray-200 pb-5 dark:border-gray-800">
                     <div>
                         <h2 id="all-signs-heading" class="text-2xl font-black tracking-tight text-gray-900 sm:text-3xl dark:text-white">
-                            Today's horoscope, sign by sign
+                            {{ __('horoscope.ui.signs_heading') }}
                         </h2>
                         <p class="mt-2 max-w-2xl text-sm text-gray-600 dark:text-gray-400">
-                            Every reading below is written for
-                            <time datetime="{{ $today->toDateString() }}" class="font-semibold text-gray-900 dark:text-white">{{ $today->format('l, j F Y') }}</time>
-                            and covers love, career, money and health, along with the lucky details for the day.
+                            {!! __('horoscope.ui.signs_intro', [
+                                'date' => '<time datetime="'.$today->toDateString().'" class="font-semibold text-gray-900 dark:text-white">'
+                                    .e($today->translatedFormat('l, j F Y')).'</time>',
+                            ]) !!}
                         </p>
                     </div>
                     <span class="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
-                        12 signs · updated daily
+                        {{ __('horoscope.ui.signs_badge') }}
                     </span>
                 </div>
 
@@ -261,37 +320,44 @@
 
                                 <div class="relative min-w-0 flex-1">
                                     <h3 id="{{ $slug }}-heading" class="truncate text-xl font-black tracking-tight sm:text-2xl">
-                                        {{ $sign['name'] }} <span class="text-white/50">Horoscope Today</span>
+                                        {{-- Linked, because this heading is the most natural
+                                             route from the hub to the sign's own page - and
+                                             that page is the one built to rank for it. --}}
+                                        <a href="{{ $signUrl($slug) }}" class="transition hover:text-white/80">
+                                            {{ $sign['name'] }} <span class="text-white/50">{{ __('horoscope.ui.horoscope_today_suffix') }}</span>
+                                        </a>
                                     </h3>
                                     <p class="mt-1 text-xs font-medium text-white/60">
                                         {{ $sign['vedic'] }} · {{ $sign['symbol_name'] }} · {{ $sign['dates'] }}
                                     </p>
                                     <div class="mt-2.5 flex flex-wrap gap-1.5">
+                                        {{-- The badge colour is keyed on the untranslated
+                                             element; the text printed is the translated one. --}}
                                         <span class="rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-wide {{ $elementBadge[$sign['element']] ?? 'border-white/20 bg-white/10 text-white' }}">
-                                            {{ $sign['element'] }}
+                                            {{ $sign['element_label'] }}
                                         </span>
                                         <span class="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white/70">
-                                            {{ $sign['quality'] }}
+                                            {{ $sign['quality_label'] }}
                                         </span>
                                         <span class="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white/70">
-                                            {{ $sign['planet'] }}
+                                            {{ $sign['planet_label'] }}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div class="relative hidden shrink-0 text-right sm:block">
                                     <div class="text-3xl font-black" style="color: {{ $sign['color'] }};">{{ $h['score'] }}<span class="text-lg">%</span></div>
-                                    <div class="text-[10px] font-black uppercase tracking-wider text-white/45">Energy</div>
+                                    <div class="text-[10px] font-black uppercase tracking-wider text-white/45">{{ __('horoscope.ui.energy') }}</div>
                                 </div>
                             </header>
 
                             <div class="p-5 sm:p-6">
                                 {{-- Mood strip --}}
                                 <p class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                                    <span class="font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">Mood today</span>
+                                    <span class="font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">{{ __('horoscope.ui.mood_today') }}</span>
                                     <span class="font-bold text-gray-900 dark:text-white">{{ $h['mood'] }}</span>
                                     <span class="text-gray-300 dark:text-gray-700" aria-hidden="true">·</span>
-                                    <span class="font-semibold text-gray-500 sm:hidden dark:text-gray-400">{{ $h['score'] }}% energy</span>
+                                    <span class="font-semibold text-gray-500 sm:hidden dark:text-gray-400">{{ $h['score'] }}% {{ __('horoscope.ui.energy') }}</span>
                                 </p>
 
                                 <p class="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
@@ -301,10 +367,10 @@
                                 {{-- Four life areas --}}
                                 <dl class="mt-5 space-y-3">
                                     @foreach([
-                                        ['key' => 'love', 'label' => 'Love', 'icon' => '💖', 'bar' => 'bg-rose-500'],
-                                        ['key' => 'career', 'label' => 'Career', 'icon' => '💼', 'bar' => 'bg-indigo-500'],
-                                        ['key' => 'money', 'label' => 'Money', 'icon' => '💰', 'bar' => 'bg-amber-500'],
-                                        ['key' => 'health', 'label' => 'Health', 'icon' => '🌿', 'bar' => 'bg-emerald-500'],
+                                        ['key' => 'love', 'label' => __('horoscope.ui.love_short'), 'icon' => '💖', 'bar' => 'bg-rose-500'],
+                                        ['key' => 'career', 'label' => __('horoscope.ui.career_short'), 'icon' => '💼', 'bar' => 'bg-indigo-500'],
+                                        ['key' => 'money', 'label' => __('horoscope.ui.money_short'), 'icon' => '💰', 'bar' => 'bg-amber-500'],
+                                        ['key' => 'health', 'label' => __('horoscope.ui.health_short'), 'icon' => '🌿', 'bar' => 'bg-emerald-500'],
                                     ] as $area)
                                         <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-3.5 dark:border-gray-800 dark:bg-gray-900/50">
                                             <dt class="flex items-center justify-between gap-3">
@@ -328,12 +394,12 @@
                                 {{-- Lucky details --}}
                                 <dl class="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-gray-200 bg-gray-200 sm:grid-cols-3 dark:border-gray-800 dark:bg-gray-800">
                                     @foreach([
-                                        ['Lucky number', '#'.$h['lucky_number']],
-                                        ['Lucky colour', $h['lucky_color']],
-                                        ['Lucky time', $h['lucky_time']],
-                                        ['Lucky day', $sign['lucky_day']],
-                                        ['Direction', $h['lucky_direction']],
-                                        ['Gemstone', $sign['gemstone']],
+                                        [__('horoscope.ui.lucky_number'), '#'.$h['lucky_number']],
+                                        [__('horoscope.ui.lucky_color'), $h['lucky_color']],
+                                        [__('horoscope.ui.lucky_time'), $h['lucky_time']],
+                                        [__('horoscope.ui.lucky_day'), $sign['lucky_day_label']],
+                                        [__('horoscope.ui.lucky_direction'), $h['lucky_direction']],
+                                        [__('horoscope.ui.gemstone'), $sign['gemstone_label']],
                                     ] as [$label, $value])
                                         <div class="bg-white px-3 py-2.5 dark:bg-gray-900">
                                             <dt class="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">{{ $label }}</dt>
@@ -351,16 +417,16 @@
                                 {{-- Evergreen sign description: the part that ranks between --}}
                                 <details class="group/details mt-5">
                                     <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-black uppercase tracking-wider text-gray-500 transition hover:text-violet-600 dark:text-gray-400 dark:hover:text-violet-400">
-                                        About the {{ $sign['name'] }} personality
+                                        {{ __('horoscope.ui.about_sign', ['name' => $sign['name']]) }}
                                         <span class="transition group-open/details:rotate-180" aria-hidden="true">⌄</span>
                                     </summary>
                                     <div class="mt-3 space-y-3">
                                         <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-400">{{ $sign['about'] }}</p>
                                         <p class="text-xs text-gray-600 dark:text-gray-400">
-                                            <strong class="font-black text-emerald-600 dark:text-emerald-400">Strengths:</strong>
+                                            <strong class="font-black text-emerald-600 dark:text-emerald-400">{{ __('horoscope.ui.strengths_label') }}</strong>
                                             {{ implode(', ', $sign['strengths']) }}
                                             <span class="mx-1 text-gray-300 dark:text-gray-700" aria-hidden="true">|</span>
-                                            <strong class="font-black text-rose-600 dark:text-rose-400">Watch out for:</strong>
+                                            <strong class="font-black text-rose-600 dark:text-rose-400">{{ __('horoscope.ui.watch_out') }}</strong>
                                             {{ implode(', ', $sign['weaknesses']) }}
                                         </p>
                                     </div>
@@ -368,10 +434,10 @@
 
                                 {{-- Best matches, linked into the compatibility calculator --}}
                                 <div class="mt-5 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
-                                    <span class="text-[11px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">Best matches</span>
+                                    <span class="text-[11px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">{{ __('horoscope.ui.best_matches') }}</span>
                                     @foreach($sign['best_matches'] as $match)
                                         @continue(! isset($signs[$match]))
-                                        <a href="{{ route('horoscope.compatibility', ['sign1' => $slug, 'sign2' => $match]) }}"
+                                        <a href="{{ $pairUrl($slug, $match) }}"
                                            class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-700 transition hover:bg-violet-100 hover:text-violet-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-violet-500/15 dark:hover:text-violet-300">
                                             <span aria-hidden="true">{{ $signs[$match]['symbol'] }}</span>
                                             {{ $signs[$match]['name'] }}
@@ -389,19 +455,17 @@
             {{-- ======================= ELEMENTS GUIDE ======================= --}}
             <section class="mt-16" aria-labelledby="elements-heading">
                 <h2 id="elements-heading" class="text-2xl font-black tracking-tight text-gray-900 sm:text-3xl dark:text-white">
-                    The four elements, and why they decide compatibility
+                    {{ __('horoscope.ui.elements_heading') }}
                 </h2>
                 <p class="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                    Each of the 12 zodiac signs belongs to one of four elements. The element sets the temperature of a
-                    sign — how it loves, argues, spends and recovers — and it is the first thing an astrologer looks at
-                    when checking whether two people will get along.
+                    {{ __('horoscope.ui.elements_intro') }}
                 </p>
 
                 <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     @foreach($elements as $element)
                         <div class="rounded-3xl border {{ $element['ring'] }} {{ $element['tint'] }} p-5">
                             <span class="text-2xl" aria-hidden="true">{{ $element['icon'] }}</span>
-                            <h3 class="mt-2 text-lg font-black {{ $element['accent'] }}">{{ $element['name'] }} signs</h3>
+                            <h3 class="mt-2 text-lg font-black {{ $element['accent'] }}">{{ __('horoscope.ui.element_signs', ['element' => $element['name']]) }}</h3>
                             <p class="mt-1.5 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{{ $element['traits'] }}</p>
                             <p class="mt-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">{{ $element['pairs'] }}</p>
                             <ul class="mt-3 flex flex-wrap gap-1.5">
@@ -430,19 +494,18 @@
                 <div class="relative flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
                     <div class="max-w-xl">
                         <span class="inline-flex items-center gap-1.5 rounded-full border border-rose-400/30 bg-rose-500/15 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-rose-200">
-                            <span aria-hidden="true">💖</span> Love compatibility
+                            <span aria-hidden="true">💖</span> {{ __('horoscope.seo.breadcrumb_compatibility') }}
                         </span>
                         <h2 class="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
-                            How well do your two signs actually match?
+                            {{ __('horoscope.ui.compat_cta_heading') }}
                         </h2>
                         <p class="mt-2 text-sm leading-relaxed text-white/65">
-                            Pick your sign and your partner's to get a match score with love chemistry, friendship,
-                            and the one piece of advice that keeps the pairing working.
+                            {{ __('horoscope.ui.compat_cta_intro') }}
                         </p>
                     </div>
-                    <a href="{{ route('horoscope.compatibility') }}"
+                    <a href="{{ $compatibilityUrl }}"
                        class="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-violet-600 px-7 py-4 text-sm font-black shadow-xl shadow-rose-900/40 transition hover:from-rose-400 hover:to-violet-500 active:scale-95">
-                        Open the calculator
+                        {{ __('horoscope.ui.compat_cta_button') }}
                         <span aria-hidden="true">&rarr;</span>
                     </a>
                 </div>
@@ -451,7 +514,7 @@
             {{-- ======================= FAQ ======================= --}}
             <section class="mt-16" aria-labelledby="faq-heading">
                 <h2 id="faq-heading" class="text-2xl font-black tracking-tight text-gray-900 sm:text-3xl dark:text-white">
-                    Horoscope questions, answered
+                    {{ __('horoscope.ui.hub_faq_heading') }}
                 </h2>
 
                 <div class="mt-6 divide-y divide-gray-200 overflow-hidden rounded-3xl border border-gray-200 dark:divide-gray-800 dark:border-gray-800">
@@ -473,7 +536,7 @@
             @if($trending->isNotEmpty())
                 <section class="mt-16" aria-labelledby="trending-heading">
                     <h2 id="trending-heading" class="text-2xl font-black tracking-tight text-gray-900 sm:text-3xl dark:text-white">
-                        Trending on the site right now
+                        {{ __('horoscope.ui.trending_heading') }}
                     </h2>
                     <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                         @foreach($trending as $post)
@@ -488,8 +551,7 @@
             {{-- Astrology is entertainment, and saying so plainly is both honest
                  and what Google's quality guidelines expect on this topic. --}}
             <p class="mx-auto mt-10 max-w-2xl text-center text-xs leading-relaxed text-gray-400 dark:text-gray-500">
-                Horoscopes on this page are generated for entertainment and general guidance. They are not a substitute
-                for professional medical, legal or financial advice.
+                {{ __('horoscope.ui.disclaimer') }}
             </p>
         </div>
     </div>

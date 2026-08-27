@@ -38,12 +38,11 @@ class HomeController extends Controller
         // showing its own latest. Two queries for all of them.
         $sections = $this->feed->sections(categories: 4, perCategory: 5);
 
+        // The names and images only. The strip links to the twelve sign pages
+        // rather than opening a reading in place, so building twelve forecasts
+        // here - and the query behind them - was work done on every home page
+        // load for something nothing rendered.
         $signs = $this->horoscope->signs();
-        $todayHoroscopes = [];
-
-        foreach ($signs as $slug => $sign) {
-            $todayHoroscopes[$slug] = $this->horoscope->daily($slug);
-        }
 
         // The list a reader sees at the top of the page, in the order they see
         // it, so the schema matches the rendering rather than the query. Unique
@@ -64,7 +63,6 @@ class HomeController extends Controller
             'trending' => $trending,
             'featured' => $this->feed->featured(4),
             'signs' => $signs,
-            'todayHoroscopes' => $todayHoroscopes,
             'seo' => [
                 ...$this->seo->forPage(
                     null,

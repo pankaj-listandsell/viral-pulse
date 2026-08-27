@@ -75,6 +75,14 @@
                 <input type="hidden" name="trashed" value="1">
             @endif
 
+            {{-- The chosen ordering rides along with the filter, so narrowing
+                 the list does not silently throw the sort away and bounce the
+                 reader back to newest-first. --}}
+            @if(request('sort'))
+                <input type="hidden" name="sort" value="{{ request('sort') }}">
+                <input type="hidden" name="direction" value="{{ request('direction') }}">
+            @endif
+
             {{-- Search Bar with Clear Icon --}}
             <div class="relative min-w-[240px] flex-1">
                 <x-icon name="search" class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400" />
@@ -212,12 +220,12 @@
                                         aria-label="Select all"
                                     />
                                 </th>
-                                <th scope="col" class="px-5 py-3 font-medium">Title</th>
-                                <th scope="col" class="hidden px-5 py-3 font-medium lg:table-cell">Category</th>
-                                <th scope="col" class="px-5 py-3 font-medium">Status</th>
-                                <th scope="col" class="hidden px-5 py-3 font-medium sm:table-cell">Views</th>
-                                <th scope="col" class="hidden px-5 py-3 font-medium md:table-cell">Created</th>
-                                <th scope="col" class="hidden px-5 py-3 font-medium lg:table-cell">Updated</th>
+                                <x-admin.sort-header column="title" :sort="$sort" :direction="$direction" default="asc">Title</x-admin.sort-header>
+                                <x-admin.sort-header column="category" :sort="$sort" :direction="$direction" default="asc" class="hidden lg:table-cell">Category</x-admin.sort-header>
+                                <x-admin.sort-header column="status" :sort="$sort" :direction="$direction" default="asc">Status</x-admin.sort-header>
+                                <x-admin.sort-header column="views" :sort="$sort" :direction="$direction" class="hidden sm:table-cell">Views</x-admin.sort-header>
+                                <x-admin.sort-header column="created" :sort="$sort" :direction="$direction" class="hidden md:table-cell">Created</x-admin.sort-header>
+                                <x-admin.sort-header column="updated" :sort="$sort" :direction="$direction" class="hidden lg:table-cell">Updated</x-admin.sort-header>
                                 <th scope="col" class="px-5 py-3"><span class="sr-only">Actions</span></th>
                             </tr>
                         </thead>

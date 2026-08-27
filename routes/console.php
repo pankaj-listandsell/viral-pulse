@@ -80,6 +80,40 @@ Schedule::command('content:generate-daily-horoscope')
     ->between('05:00', '10:00')
     ->withoutOverlapping(30);
 
+/*
+ * The readings on the horoscope pages themselves, in every language.
+ *
+ * Earlier than the article and across the same kind of window, for the same
+ * cron-throttling reason. These have to be in place before the morning's
+ * readers arrive: a page with no row for today falls back to its static pool,
+ * which is complete but not fresh, and freshness is the whole reason twelve
+ * sign pages are worth having.
+ *
+ * The command's own guard makes repeating harmless - the first run of the day
+ * writes, the rest see the rows and stop - and a run that half-failed is
+ * finished off by the next tick rather than left until tomorrow.
+ */
+Schedule::command('content:generate-horoscope-readings --period=daily')
+    ->everyTenMinutes()
+    ->between('03:30', '09:00')
+    ->withoutOverlapping(45);
+
+// Monday's window, so the weekly reading is in place before the week it
+// describes has really started.
+Schedule::command('content:generate-horoscope-readings --period=weekly')
+    ->everyThirtyMinutes()
+    ->mondays()
+    ->between('03:30', '11:00')
+    ->withoutOverlapping(45);
+
+// The 1st. `->monthlyOn(1, ...)` would pin it to one minute again, so this is
+// a window too, filtered to the first of the month.
+Schedule::command('content:generate-horoscope-readings --period=monthly')
+    ->everyThirtyMinutes()
+    ->between('03:30', '11:00')
+    ->when(fn (): bool => now()->day === 1)
+    ->withoutOverlapping(45);
+
 // Keeps the queue bookkeeping tables from growing without bound. Failed jobs
 // are kept a month, which is long enough to investigate a pattern.
 Schedule::command('queue:prune-batches --hours=48')->daily();

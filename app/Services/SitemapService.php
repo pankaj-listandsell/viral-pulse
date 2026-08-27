@@ -6,6 +6,7 @@ use App\Enums\PostStatus;
 use App\Models\Category;
 use App\Models\Post;
 use App\Models\Tag;
+use App\Services\LocaleService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -124,11 +125,11 @@ class SitemapService
                 ['loc' => route('home'), 'lastmod' => $this->latestPostUpdate()],
                 ['loc' => route('latest'), 'lastmod' => null],
                 ['loc' => route('trending'), 'lastmod' => null],
-                ['loc' => route('horoscope'), 'lastmod' => now()],
-                ['loc' => route('horoscope.compatibility'), 'lastmod' => now()],
                 ['loc' => route('contact'), 'lastmod' => null],
                 ['loc' => route('sitemap.page'), 'lastmod' => null],
             ];
+
+            $entries = [...$entries, ...$this->horoscopeEntries()];
 
             foreach (['about', 'privacy', 'terms', 'disclaimer'] as $page) {
                 $entries[] = ['loc' => route('pages.show', $page), 'lastmod' => null];
@@ -136,6 +137,42 @@ class SitemapService
 
             return $this->render($entries);
         });
+    }
+
+    /**
+     * Every horoscope URL the site publishes, in every language.
+     *
+     * Twenty-eight entries: a hub, a compatibility calculator and twelve sign
+     * pages per language. They are listed individually rather than left to be
+     * discovered by crawling, because a sign page one click deep is exactly
+     * the kind of URL that sits unindexed for weeks otherwise.
+     *
+     * lastmod is today for all of them, and truthfully so - every reading on
+     * every one of these pages is rewritten daily.
+     *
+     * The hreflang pairing is declared in each page's <head> rather than
+     * repeated here. Google accepts either, and one source is one thing to
+     * keep correct.
+     *
+     * @return array<int, array{loc: string, lastmod: mixed}>
+     */
+    private function horoscopeEntries(): array
+    {
+        $locales = app(LocaleService::class);
+        $signs = array_keys(config('horoscope.slugs.'.$locales->default(), []));
+
+        $entries = [];
+
+        foreach ($locales->codes() as $code) {
+            $entries[] = ['loc' => $locales->horoscopeUrl('hub', null, $code), 'lastmod' => now()];
+            $entries[] = ['loc' => $locales->horoscopeUrl('compatibility', null, $code), 'lastmod' => now()];
+
+            foreach ($signs as $sign) {
+                $entries[] = ['loc' => $locales->horoscopeUrl('sign', $sign, $code), 'lastmod' => now()];
+            }
+        }
+
+        return $entries;
     }
 
     public function postPageCount(): int

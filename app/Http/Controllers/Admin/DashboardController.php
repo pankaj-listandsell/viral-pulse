@@ -19,6 +19,9 @@ class DashboardController extends Controller
             'topCategories' => $this->dashboard->topCategories(),
             'topPosts' => $this->dashboard->topPosts(),
             'recentPosts' => $this->dashboard->recentPosts(),
+            'viewsByPublishHour' => $this->dashboard->viewsByPublishHour(),
+            'viewsByCategory' => $this->dashboard->viewsByCategory(),
+            'googleReports' => $this->dashboard->googleReports(),
         ]);
     }
 }

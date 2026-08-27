@@ -4,17 +4,30 @@ import { computed, ref } from 'vue';
 const props = defineProps({
     url: { type: String, required: true },
     title: { type: String, required: true },
+    /*
+     * The message body for the apps that carry one, when the headline alone is
+     * not the thing worth sending.
+     *
+     * A horoscope is shared for what it says - the reading, the lucky number,
+     * the colour - not for its title, and a link with only a title attached is
+     * one nobody forwards. An article is the other way round, so this is
+     * optional and the headline stays the default.
+     */
+    message: { type: String, default: '' },
 });
 
 const copied = ref(false);
 
-const whatsappUrl = computed(() => {
-    const text = encodeURIComponent(`🔥 *${props.title}*\n\nRead full story here:\n${props.url}`);
-    return `https://api.whatsapp.com/send?text=${text}`;
-});
+// The body an app is handed, with the URL always last so it stays clickable
+// at the end of the message rather than buried mid-sentence.
+const shareBody = computed(() => (props.message
+    ? `${props.message}\n\n${props.url}`
+    : `🔥 *${props.title}*\n\nRead full story here:\n${props.url}`));
+
+const whatsappUrl = computed(() => `https://api.whatsapp.com/send?text=${encodeURIComponent(shareBody.value)}`);
 
 const telegramUrl = computed(() => {
-    const text = encodeURIComponent(props.title);
+    const text = encodeURIComponent(props.message || props.title);
     const url = encodeURIComponent(props.url);
     return `https://t.me/share/url?url=${url}&text=${text}`;
 });
@@ -34,7 +47,7 @@ const canShareNatively = typeof navigator !== 'undefined' && !!navigator.share;
 
 async function shareNatively() {
     try {
-        await navigator.share({ title: props.title, text: props.title, url: props.url });
+        await navigator.share({ title: props.title, text: props.message || props.title, url: props.url });
     } catch {
         // Dismissed
     }

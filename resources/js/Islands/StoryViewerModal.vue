@@ -10,13 +10,21 @@ const props = defineProps({
         type: Object,
         default: () => ({}),
     },
-    todayHoroscopes: {
-        type: Object,
-        default: () => ({}),
-    },
     pageUrl: {
         type: String,
         default: () => (typeof window !== 'undefined' ? window.location.href : ''),
+    },
+    /*
+     * Where each sign leads, keyed by slug and already in the right language.
+     *
+     * Clicking a sign used to open a modal. It now goes to that sign's own
+     * page, which carries everything the modal did and a great deal more -
+     * this week, this month, the profile, every pairing - and, unlike a modal,
+     * is a real destination that can be linked to, shared and indexed.
+     */
+    signUrls: {
+        type: Object,
+        default: () => ({}),
     },
 });
 
@@ -27,9 +35,8 @@ const progress = ref(0);
 let timer = null;
 const duration = 5000;
 
-// Horoscope state
-const isHoroscopeOpen = ref(false);
-const selectedHoroscope = ref(null);
+// Horoscope state. The strip is a rail of links now, so the only thing left to
+// track is whether the reader is touching it.
 const isLoopPaused = ref(false);
 
 const currentStory = computed(() => props.stories[activeStoryIndex.value] || null);
@@ -106,29 +113,9 @@ function handleTap(event) {
     }
 }
 
-// --- Horoscope Modal Functions ---
-function openHoroscope(slug) {
-    const h = props.todayHoroscopes[slug] || null;
-    if (h) {
-        selectedHoroscope.value = h;
-        isHoroscopeOpen.value = true;
-    }
-}
-
-function closeHoroscope() {
-    isHoroscopeOpen.value = false;
-}
-
-function shareHoroscope(h) {
-    if (!h) return;
-    const text = encodeURIComponent(`🔮 *Today's Horoscope for ${h.sign.name} (${h.sign.vedic})*:\n\n✨ ${h.overview}\n\n🔢 Lucky Number: *${h.lucky_number}*\n🎨 Lucky Color: *${h.lucky_color}*\n💫 Energy: *${h.score}%*\n\n👉 Read full prediction here:\n${props.pageUrl || window.location.href}`);
-    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
-}
-
 function onKeydown(event) {
     if (event.key === 'Escape') {
         if (isStoryOpen.value) closeStory();
-        if (isHoroscopeOpen.value) closeHoroscope();
     }
     if (isStoryOpen.value) {
         if (event.key === 'ArrowRight') nextStory();
@@ -179,11 +166,13 @@ onBeforeUnmount(() => {
                     class="horoscope-auto-track flex items-center gap-4 sm:gap-5"
                     :class="{ 'is-paused': isLoopPaused }"
                 >
-                    <div
+                    <a
                         v-for="(sign, idx) in loopSigns"
                         :key="`${sign.slug}-${idx}`"
-                        class="group relative flex-shrink-0 cursor-pointer flex flex-col items-center select-none"
-                        @click="openHoroscope(sign.slug)"
+                        :href="signUrls[sign.slug]"
+                        :aria-hidden="idx >= signsArray.length"
+                        :tabindex="idx >= signsArray.length ? -1 : null"
+                        class="group relative flex-shrink-0 flex flex-col items-center select-none"
                     >
                         <!-- Glowing Gradient Ring with Sign Illustration -->
                         <div
@@ -207,7 +196,7 @@ onBeforeUnmount(() => {
                         <span class="text-[10px] sm:text-[11px] font-bold text-gray-400 dark:text-gray-500">
                             {{ sign.vedic.split(' ')[0] }}
                         </span>
-                    </div>
+                    </a>
                 </div>
             </div>
         </section>
@@ -328,116 +317,6 @@ onBeforeUnmount(() => {
                 </div>
             </div>
         </Teleport>
-
-        <!-- LUXURY CELESTIAL ZODIAC STORY MODAL -->
-        <Teleport to="body">
-            <div
-                v-if="isHoroscopeOpen && selectedHoroscope"
-                class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto"
-                @click.self="closeHoroscope"
-            >
-                <div class="relative w-full max-w-lg rounded-3xl border border-purple-500/30 bg-[#0d0d21] p-6 sm:p-8 text-white shadow-2xl animate-scaleUp my-8">
-                    
-                    <button
-                        type="button"
-                        aria-label="Close"
-                        class="absolute top-5 right-5 rounded-full bg-white/10 p-2 text-gray-400 hover:bg-white/20 hover:text-white transition"
-                        @click="closeHoroscope"
-                    >
-                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                    </button>
-
-                    <div class="flex items-center gap-4 mb-6">
-                        <div
-                            class="relative size-24 sm:size-28 shrink-0 overflow-hidden rounded-2xl p-1 border-2 shadow-2xl"
-                            :style="{ borderColor: selectedHoroscope.sign.color }"
-                        >
-                            <img
-                                :src="selectedHoroscope.sign.image"
-                                :alt="selectedHoroscope.sign.name"
-                                class="size-full object-cover rounded-xl"
-                            >
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2.5">
-                                <h3 class="text-2xl font-black">{{ selectedHoroscope.sign.name }}</h3>
-                                <span class="rounded-full bg-purple-500/20 px-2.5 py-0.5 text-xs font-bold text-purple-300 border border-purple-400/30">
-                                    {{ selectedHoroscope.sign.element }}
-                                </span>
-                            </div>
-                            <p class="text-xs text-gray-400 mt-1 font-medium">
-                                {{ selectedHoroscope.sign.vedic }} &middot; {{ selectedHoroscope.sign.dates }}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="rounded-2xl border border-purple-500/30 bg-white/[0.04] p-4 sm:p-5 mb-5 shadow-inner">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-black uppercase tracking-wider text-purple-300 flex items-center gap-1">
-                                <span>✨</span> Today's Horoscope
-                            </span>
-                            <span class="text-[11px] font-bold text-gray-400">{{ selectedHoroscope.date }}</span>
-                        </div>
-                        <p class="text-xs sm:text-sm text-gray-200 leading-relaxed">
-                            {{ selectedHoroscope.overview }}
-                        </p>
-                    </div>
-
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5 text-center">
-                        <div class="rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
-                            <span class="text-[10px] font-black uppercase text-gray-400">Lucky No</span>
-                            <div class="text-base font-black text-purple-400 mt-0.5">#{{ selectedHoroscope.lucky_number }}</div>
-                        </div>
-                        <div class="rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
-                            <span class="text-[10px] font-black uppercase text-gray-400">Lucky Color</span>
-                            <div class="text-xs font-black text-amber-300 mt-1 truncate">{{ selectedHoroscope.lucky_color }}</div>
-                        </div>
-                        <div class="rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
-                            <span class="text-[10px] font-black uppercase text-gray-400">Energy</span>
-                            <div class="text-base font-black text-emerald-400 mt-0.5">{{ selectedHoroscope.score }}%</div>
-                        </div>
-                        <div class="rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
-                            <span class="text-[10px] font-black uppercase text-gray-400">Planet</span>
-                            <div class="text-xs font-black text-cyan-300 mt-1 truncate">{{ selectedHoroscope.sign.planet }}</div>
-                        </div>
-                    </div>
-
-                    <div class="space-y-2.5 mb-6 text-xs">
-                        <div class="flex gap-3 rounded-xl border border-pink-500/20 bg-pink-500/10 p-3">
-                            <span class="text-base">💖</span>
-                            <div>
-                                <strong class="font-bold text-pink-300">Love:</strong>
-                                <p class="text-gray-300 mt-0.5">{{ selectedHoroscope.love }}</p>
-                            </div>
-                        </div>
-                        <div class="flex gap-3 rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-3">
-                            <span class="text-base">💼</span>
-                            <div>
-                                <strong class="font-bold text-indigo-300">Career:</strong>
-                                <p class="text-gray-300 mt-0.5">{{ selectedHoroscope.career }}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between gap-3">
-                        <button
-                            type="button"
-                            class="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 text-xs font-black transition shadow-lg active:scale-95"
-                            @click="shareHoroscope(selectedHoroscope)"
-                        >
-                            <span>📲 Share on WhatsApp</span>
-                        </button>
-                        <button
-                            type="button"
-                            class="rounded-2xl border border-white/20 bg-white/5 px-5 py-3 text-xs font-bold text-gray-300 hover:bg-white/10 hover:text-white transition"
-                            @click="closeHoroscope"
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </Teleport>
     </div>
 </template>
 
@@ -462,11 +341,4 @@ onBeforeUnmount(() => {
     animation-play-state: paused;
 }
 
-@keyframes scaleUp {
-    from { opacity: 0; transform: scale(0.94); }
-    to { opacity: 1; transform: scale(1); }
-}
-.animate-scaleUp {
-    animation: scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
 </style>

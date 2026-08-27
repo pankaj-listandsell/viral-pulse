@@ -31,6 +31,30 @@ class OpenAiProvider implements AiProvider
      */
     public function generate(GenerationRequest $request, string $systemPrompt, string $userPrompt): array
     {
+        $result = $this->call($systemPrompt, $userPrompt, ResponseParser::schema(), 'article');
+
+        return [...$result, 'payload' => $this->parser->parse($result['raw'])];
+    }
+
+    /**
+     * @param  array<string, mixed>  $schema
+     * @return array{payload: array<string, mixed>, model: string, prompt_tokens: int, completion_tokens: int, raw: string}
+     */
+    public function generateJson(string $systemPrompt, string $userPrompt, array $schema, string $name = 'result'): array
+    {
+        $result = $this->call($systemPrompt, $userPrompt, $schema, $name);
+
+        return [...$result, 'payload' => $this->parser->decode($result['raw'])];
+    }
+
+    /**
+     * The single round trip, shared by both entry points above.
+     *
+     * @param  array<string, mixed>  $schema
+     * @return array{payload: array<string, mixed>, model: string, prompt_tokens: int, completion_tokens: int, raw: string}
+     */
+    private function call(string $systemPrompt, string $userPrompt, array $schema, string $name): array
+    {
         try {
             $response = Http::timeout(config('ai.timeout'))
                 ->withToken($this->config['key'])
@@ -47,9 +71,9 @@ class OpenAiProvider implements AiProvider
                     'response_format' => [
                         'type' => 'json_schema',
                         'json_schema' => [
-                            'name' => 'article',
+                            'name' => $name,
                             'strict' => true,
-                            'schema' => ResponseParser::schema(),
+                            'schema' => $schema,
                         ],
                     ],
                 ]);
@@ -68,7 +92,7 @@ class OpenAiProvider implements AiProvider
 
         if (($choice['finish_reason'] ?? null) === 'length') {
             throw AiGenerationException::retryable(
-                'The article was cut off before it finished. Try a shorter target length.'
+                'The response was cut off before it finished. Try asking for less in one call.'
             );
         }
 
@@ -87,7 +111,9 @@ class OpenAiProvider implements AiProvider
         $usage = $body['usage'] ?? [];
 
         return [
-            'payload' => $this->parser->parse($text),
+            // The caller decodes: an article and a horoscope are validated
+            // very differently, and this method knows about neither.
+            'payload' => [],
             'model' => $body['model'] ?? $this->model(),
             'prompt_tokens' => (int) ($usage['prompt_tokens'] ?? 0),
             'completion_tokens' => (int) ($usage['completion_tokens'] ?? 0),

@@ -3,6 +3,17 @@
     $logo = $siteSettings['site_logo'] ?? null;
     $activeCategoryId = request()->route('category')?->id;
     $horoscopeEnabled = $siteSettings['horoscope_enabled'] ?? true;
+
+    /*
+     * Locale-aware horoscope URLs.
+     *
+     * route('horoscope') is the English path in every language, so a Hindi
+     * reader clicking the nav would be dropped back into English. These keep
+     * them in the language the page they are on is written in.
+     */
+    $locales = app(\App\Services\LocaleService::class);
+    $horoscopeUrl = $locales->horoscopeUrl('hub');
+    $compatibilityUrl = $locales->horoscopeUrl('compatibility');
 @endphp
 
 <header class="sticky top-0 z-40 border-b border-gray-200 bg-white/85 backdrop-blur-md dark:border-gray-800 dark:bg-gray-950/85">
@@ -126,14 +137,14 @@
 
             @if($horoscopeEnabled)
                 <li class="ml-auto">
-                    <a href="{{ route('horoscope') }}"
+                    <a href="{{ $horoscopeUrl }}"
                        @class([
                            'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-bold transition',
                            'bg-violet-600 text-white' => request()->routeIs('horoscope*'),
                            'bg-violet-50 text-violet-700 hover:bg-violet-100 dark:bg-violet-500/15 dark:text-violet-300 dark:hover:bg-violet-500/25' => ! request()->routeIs('horoscope*'),
                        ])
                        @if(request()->routeIs('horoscope')) aria-current="page" @endif>
-                        <span aria-hidden="true">✨</span> Horoscope
+                        <span aria-hidden="true">✨</span> {{ __('horoscope.seo.breadcrumb_horoscope') }}
                     </a>
                 </li>
             @endif
@@ -151,13 +162,13 @@
 
             @if($horoscopeEnabled)
                 <div class="mb-4 grid grid-cols-2 gap-2">
-                    <a href="{{ route('horoscope') }}"
+                    <a href="{{ $horoscopeUrl }}"
                        class="flex items-center justify-center gap-1.5 rounded-xl bg-violet-50 px-3 py-2.5 text-sm font-black text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
-                        <span aria-hidden="true">✨</span> Horoscope
+                        <span aria-hidden="true">✨</span> {{ __('horoscope.seo.breadcrumb_horoscope') }}
                     </a>
-                    <a href="{{ route('horoscope.compatibility') }}"
+                    <a href="{{ $compatibilityUrl }}"
                        class="flex items-center justify-center gap-1.5 rounded-xl bg-rose-50 px-3 py-2.5 text-sm font-black text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
-                        <span aria-hidden="true">💖</span> Love match
+                        <span aria-hidden="true">💖</span> {{ __('horoscope.seo.breadcrumb_compatibility') }}
                     </a>
                 </div>
             @endif

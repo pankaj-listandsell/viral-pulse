@@ -38,6 +38,14 @@
 @endif
 <link rel="canonical" href="{{ $canonical }}">
 
+{{-- Every language's version of this page, each one naming all the others.
+     Without these two translations compete as near-duplicates and Google keeps
+     whichever it prefers - usually not the one you wanted. x-default names the
+     version served to a reader whose language the site does not publish. --}}
+@foreach($seo['alternates'] ?? [] as $alternate)
+    <link rel="alternate" hreflang="{{ $alternate['hreflang'] }}" href="{{ $alternate['href'] }}">
+@endforeach
+
 <x-seo.favicon :siteSettings="$settings->public()" />
 
 @if(! empty($seo['feed']))

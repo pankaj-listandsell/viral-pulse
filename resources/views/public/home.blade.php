@@ -19,7 +19,20 @@
     ])->values()->all() : [];
 
     $activeSigns = $horoscopeEnabled ? ($signs ?? []) : [];
-    $activeTodayHoroscopes = $horoscopeEnabled ? ($todayHoroscopes ?? []) : [];
+
+    /*
+     * Where the zodiac strip leads.
+     *
+     * Each sign now goes to its own page rather than opening a modal, so the
+     * twelve readings themselves no longer have to be serialised into the
+     * page - the strip needs the twelve names and images, not the twelve
+     * forecasts. Locale-aware, so the Hindi home page leads into Hindi.
+     */
+    $localeService = app(\App\Services\LocaleService::class);
+    $horoscopeHubUrl = $localeService->horoscopeUrl('hub');
+    $signPageUrls = collect($activeSigns)
+        ->mapWithKeys(fn (array $sign, string $slug): array => [$slug => $localeService->horoscopeUrl('sign', $slug)])
+        ->all();
 @endphp
 
 @section('content')
@@ -29,23 +42,42 @@
 
             {{-- Web stories & horoscope strip, first thing on the page --}}
             @if(!empty($webStories) || !empty($activeSigns))
-                {{-- The placeholder holds the strip's exact height so the news
-                     below does not jump down when the island mounts. It has to
-                     match the real thing: same avatar size, same gaps, same
-                     header row. --}}
+                {{-- What sits here before the island mounts is the strip itself,
+                     rendered as plain links, rather than a row of grey boxes.
+
+                     It holds the same height so the news below does not jump,
+                     and it does two things the boxes could not: a reader whose
+                     JavaScript has not arrived can still reach their sign, and
+                     a crawler reading the home page - the strongest page on the
+                     site - finds twelve real links to the twelve sign pages
+                     instead of nothing at all. --}}
                 <div class="mb-4" data-island="StoryViewerModal" data-island-eager
-                     data-props="{{ json_encode(['stories' => $webStories, 'signs' => $activeSigns, 'todayHoroscopes' => $activeTodayHoroscopes, 'pageUrl' => route('horoscope')]) }}">
+                     data-props="{{ json_encode(['stories' => $webStories, 'signs' => $activeSigns, 'signUrls' => $signPageUrls, 'pageUrl' => $horoscopeHubUrl]) }}">
                     <div class="mb-1 flex justify-end">
-                        <div class="h-4 w-24 rounded bg-gray-100 dark:bg-gray-900"></div>
+                        <a href="{{ $horoscopeHubUrl }}"
+                           class="text-xs font-black text-violet-600 transition hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300">
+                            {{ __('horoscope.ui.read_full') }} &rarr;
+                        </a>
                     </div>
                     <div class="relative w-full overflow-hidden">
                         <div class="flex items-center gap-4 overflow-x-hidden sm:gap-5">
-                            @foreach(range(1, 10) as $i)
-                                <div class="flex flex-shrink-0 flex-col items-center gap-2">
-                                    <div class="size-16 rounded-full border border-gray-100 bg-gray-50 sm:size-20 dark:border-gray-800 dark:bg-gray-900"></div>
-                                    <div class="h-3 w-12 rounded bg-gray-100 dark:bg-gray-900"></div>
-                                    <div class="h-2 w-8 rounded bg-gray-100 dark:bg-gray-900"></div>
-                                </div>
+                            @foreach($activeSigns as $stripSlug => $stripSign)
+                                <a href="{{ $signPageUrls[$stripSlug] }}"
+                                   class="group flex flex-shrink-0 flex-col items-center"
+                                   title="{{ __('horoscope.seo.sign_heading', ['name' => $stripSign['name']]) }}">
+                                    <span class="block size-16 rounded-full p-[2px] transition group-hover:scale-105 sm:size-20"
+                                          style="background: linear-gradient(135deg, {{ $stripSign['color'] }}, #a855f7, #6366f1);">
+                                        <img src="{{ $stripSign['image'] }}" alt="{{ $stripSign['name'] }}"
+                                             class="size-full rounded-full border border-white/20 object-cover"
+                                             width="80" height="80" loading="lazy" decoding="async">
+                                    </span>
+                                    <span class="mt-1.5 text-center text-xs font-black text-gray-800 transition group-hover:text-violet-600 dark:text-gray-200 dark:group-hover:text-violet-400">
+                                        {{ $stripSign['name'] }}
+                                    </span>
+                                    <span class="text-[10px] font-bold text-gray-400 sm:text-[11px] dark:text-gray-500">
+                                        {{ \Illuminate\Support\Str::before($stripSign['vedic'], ' ') }}
+                                    </span>
+                                </a>
                             @endforeach
                         </div>
                     </div>

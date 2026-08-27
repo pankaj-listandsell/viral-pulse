@@ -46,18 +46,34 @@ class ResponseParser
     }
 
     /**
+     * JSON out of a model response, with no opinion about what is in it.
+     *
+     * Article generation is not the only thing that asks a provider for
+     * structured output any more - the horoscope writer asks for a completely
+     * different shape - so the "did I get valid JSON at all" step is separate
+     * from the "is this an article" step below it.
+     *
      * @return array<string, mixed>
      */
-    public function parse(string $text): array
+    public function decode(string $text): array
     {
-        $json = $this->extractJson($text);
-        $data = json_decode($json, true);
+        $data = json_decode($this->extractJson($text), true);
 
         if (! is_array($data)) {
             throw AiGenerationException::retryable(
                 'The model did not return usable JSON: '.json_last_error_msg()
             );
         }
+
+        return $data;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function parse(string $text): array
+    {
+        $data = $this->decode($text);
 
         $missing = array_diff(
             ['title', 'content', 'excerpt'],

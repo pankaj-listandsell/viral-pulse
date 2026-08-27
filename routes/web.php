@@ -4,6 +4,7 @@ use App\Http\Controllers\Public\AdsTxtController;
 use App\Http\Controllers\Public\ArchiveController;
 use App\Http\Controllers\Public\FeedController;
 use App\Http\Controllers\Public\HomeController;
+use App\Http\Controllers\Public\HoroscopeController;
 use App\Http\Controllers\Public\LikeController;
 use App\Http\Controllers\Public\NewsletterController;
 use App\Http\Controllers\Public\PageController;
@@ -31,8 +32,35 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('latest', [ArchiveController::class, 'latest'])->name('latest');
 Route::get('trending', [ArchiveController::class, 'trending'])->name('trending');
-Route::get('horoscope', [\App\Http\Controllers\Public\HoroscopeController::class, 'index'])->name('horoscope');
-Route::get('zodiac-compatibility', [\App\Http\Controllers\Public\HoroscopeController::class, 'compatibility'])->name('horoscope.compatibility');
+/*
+ * Horoscope, in every language the site publishes.
+ *
+ * Registered from config/horoscope.php rather than written out once per
+ * language, so the router, the sitemap and the hreflang tags cannot end up
+ * disagreeing about what a URL is - which is the usual reason a translated
+ * section half-indexes.
+ *
+ * English keeps its original un-prefixed paths and route names. Those are the
+ * URLs already in the index, and moving them to make room for Hindi would
+ * trade traffic the site has for traffic it hopes for.
+ */
+foreach (config('horoscope.paths') as $hLocale => $hPaths) {
+    $hName = $hLocale === config('locales.default') ? '' : "{$hLocale}.";
+
+    Route::get($hPaths['hub'], [HoroscopeController::class, 'index'])
+        ->name("{$hName}horoscope");
+
+    // Both languages' slugs are accepted by both languages' routes. A reader
+    // who lands on /horoscope/mesh is redirected to the Hindi page rather than
+    // shown a 404, and anything that is not a sign at all still 404s here
+    // instead of reaching the controller.
+    Route::get($hPaths['sign'], [HoroscopeController::class, 'sign'])
+        ->whereIn('sign', collect(config('horoscope.slugs'))->flatten()->unique()->all())
+        ->name("{$hName}horoscope.sign");
+
+    Route::get($hPaths['compatibility'], [HoroscopeController::class, 'compatibility'])
+        ->name("{$hName}horoscope.compatibility");
+}
 
 Route::get('categories', [ArchiveController::class, 'categories'])->name('categories.index');
 Route::get('category/{category}', [ArchiveController::class, 'category'])->name('categories.show');

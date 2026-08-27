@@ -13,6 +13,29 @@ const props = defineProps({
     initialSign1: { type: String, default: 'aries' },
     initialSign2: { type: String, default: 'leo' },
     baseUrl: { type: String, default: '' },
+    // Translated in PHP and handed over, for the same reason as the picker.
+    labels: {
+        type: Object,
+        default: () => ({
+            yourSign: 'Your sign',
+            theirSign: 'Their sign',
+            fullBreakdown: 'Full breakdown',
+            match: 'Match',
+            love: 'Love',
+            friendship: 'Friends',
+            communication: 'Talk',
+            preview: 'You are previewing {s1} & {s2} — open the full reading for the complete breakdown.',
+            openPair: 'Open {s1} & {s2}',
+            shareWhatsApp: 'Share on WhatsApp',
+            copyLink: 'Copy link',
+            linkCopied: 'Link copied',
+            shareCheckMatch: 'Check your own match:',
+        }),
+    },
+    // The sign slug each locale puts in a URL, keyed by the English sign key.
+    // Without it the calculator would build /hindi/rashi-milan?sign1=aries,
+    // which is a URL Hindi never uses and which redirects on arrival.
+    slugs: { type: Object, default: () => ({}) },
 });
 
 const sign1 = ref(props.initialSign1);
@@ -61,11 +84,11 @@ const match = computed(() => {
 });
 
 /* Three headline numbers here; the full five are in the page's own reading. */
-const headline = [
-    { key: 'love', label: 'Love', icon: '💖' },
-    { key: 'friendship', label: 'Friends', icon: '🤝' },
-    { key: 'communication', label: 'Talk', icon: '💬' },
-];
+const headline = computed(() => [
+    { key: 'love', label: props.labels.love ?? 'Love', icon: '💖' },
+    { key: 'friendship', label: props.labels.friendship ?? 'Friends', icon: '🤝' },
+    { key: 'communication', label: props.labels.communication ?? 'Talk', icon: '💬' },
+]);
 
 const isCurrentPair = computed(
     () => sign1.value === props.initialSign1 && sign2.value === props.initialSign2,
@@ -81,7 +104,10 @@ const tone = computed(() => {
     return 'text-amber-600 dark:text-amber-400';
 });
 
-const pairUrl = computed(() => `${props.baseUrl}?sign1=${sign1.value}&sign2=${sign2.value}`);
+// The pair in the slugs this locale actually publishes, so the link the reader
+// copies is the canonical one rather than one that 301s on arrival.
+const slugFor = (sign) => props.slugs[sign] ?? sign;
+const pairUrl = computed(() => `${props.baseUrl}?sign1=${slugFor(sign1.value)}&sign2=${slugFor(sign2.value)}`);
 
 /* The score ring, drawn as a single arc. */
 const RING = 2 * Math.PI * 44;
@@ -95,9 +121,9 @@ function swap() {
 
 function shareWhatsApp() {
     const m = match.value;
-    const text = `💞 ${s1.value.name} + ${s2.value.name}: ${m.score}% match (${m.title})\n\n`
-        + `💖 Love ${m.scores.love}%  🤝 Friendship ${m.scores.friendship}%  💬 Communication ${m.scores.communication}%\n\n`
-        + `${m.summary}\n\nCheck your own match: ${pairUrl.value}`;
+    const text = `💞 ${s1.value.name} + ${s2.value.name}: ${m.score}% ${props.labels.match ?? 'match'} (${m.title})\n\n`
+        + `💖 ${props.labels.love ?? 'Love'} ${m.scores.love}%  🤝 ${props.labels.friendship ?? 'Friendship'} ${m.scores.friendship}%  💬 ${props.labels.communication ?? 'Communication'} ${m.scores.communication}%\n\n`
+        + `${m.summary}\n\n${props.labels.shareCheckMatch ?? 'Check your own match:'} ${pairUrl.value}`;
 
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
 }
@@ -120,7 +146,7 @@ async function copyLink() {
         <div class="grid gap-4 border-b border-gray-200 bg-gray-50/80 p-5 sm:p-6 md:grid-cols-[1fr_auto_1fr] md:items-end dark:border-gray-800 dark:bg-gray-900/60">
             <div>
                 <label :for="'sign1-select'" class="mb-2 block text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    Your sign
+                    {{ labels.yourSign }}
                 </label>
                 <div class="flex items-center gap-3">
                     <img
@@ -137,7 +163,7 @@ async function copyLink() {
                         class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm font-bold text-gray-900 shadow-sm focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
                     >
                         <option v-for="(entry, slug) in signs" :key="slug" :value="slug">
-                            {{ entry.symbol }} {{ entry.name }} · {{ entry.element }}
+                            {{ entry.symbol }} {{ entry.name }} · {{ entry.element_label ?? entry.element }}
                         </option>
                     </select>
                 </div>
@@ -155,7 +181,7 @@ async function copyLink() {
 
             <div>
                 <label :for="'sign2-select'" class="mb-2 block text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    Their sign
+                    {{ labels.theirSign }}
                 </label>
                 <div class="flex items-center gap-3">
                     <img
@@ -172,7 +198,7 @@ async function copyLink() {
                         class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm font-bold text-gray-900 shadow-sm focus:border-rose-500 focus:ring-2 focus:ring-rose-500/30 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
                     >
                         <option v-for="(entry, slug) in signs" :key="slug" :value="slug">
-                            {{ entry.symbol }} {{ entry.name }} · {{ entry.element }}
+                            {{ entry.symbol }} {{ entry.name }} · {{ entry.element_label ?? entry.element }}
                         </option>
                     </select>
                 </div>
@@ -195,7 +221,7 @@ async function copyLink() {
                     </svg>
                     <div class="absolute inset-0 flex flex-col items-center justify-center">
                         <span class="text-4xl font-black text-gray-900 dark:text-white">{{ match.score }}%</span>
-                        <span class="text-[10px] font-black uppercase tracking-wider text-gray-400">Match</span>
+                        <span class="text-[10px] font-black uppercase tracking-wider text-gray-400">{{ labels.match ?? 'Match' }}</span>
                     </div>
                 </div>
                 <p class="mt-2 text-center text-sm font-black" :class="tone">{{ match.title }}</p>
@@ -219,7 +245,7 @@ async function copyLink() {
                 <!-- The detailed breakdown lives in the page itself, so this
                      points at it rather than repeating it. -->
                 <p v-if="!isCurrentPair" class="mt-4 text-xs font-semibold text-amber-700 dark:text-amber-400">
-                    You are previewing {{ s1.name }} &amp; {{ s2.name }} — open the full reading for the complete breakdown.
+                    {{ fill(labels.preview ?? 'You are previewing {s1} & {s2} — open the full reading for the complete breakdown.') }}
                 </p>
 
                 <div class="mt-5 flex flex-wrap items-center gap-2">
@@ -227,22 +253,22 @@ async function copyLink() {
                         :href="isCurrentPair ? '#result-heading' : pairUrl"
                         class="inline-flex items-center gap-1.5 rounded-xl bg-gray-900 px-4 py-2.5 text-xs font-black text-white transition hover:bg-violet-600 active:scale-95 dark:bg-white dark:text-gray-900 dark:hover:bg-violet-500 dark:hover:text-white"
                     >
-                        <template v-if="isCurrentPair">Full breakdown <span aria-hidden="true">↓</span></template>
-                        <template v-else>Open {{ s1.name }} &amp; {{ s2.name }} <span aria-hidden="true">→</span></template>
+                        <template v-if="isCurrentPair">{{ labels.fullBreakdown }} <span aria-hidden="true">↓</span></template>
+                        <template v-else>{{ fill(labels.openPair ?? 'Open {s1} & {s2}') }} <span aria-hidden="true">→</span></template>
                     </a>
                     <button
                         type="button"
                         class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white transition hover:bg-emerald-500 active:scale-95"
                         @click="shareWhatsApp"
                     >
-                        <span aria-hidden="true">📲</span> Share on WhatsApp
+                        <span aria-hidden="true">📲</span> {{ labels.shareWhatsApp ?? 'Share on WhatsApp' }}
                     </button>
                     <button
                         type="button"
                         class="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 px-4 py-2.5 text-xs font-bold text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                         @click="copyLink"
                     >
-                        {{ copied ? '✓ Link copied' : 'Copy link' }}
+                        {{ copied ? (labels.linkCopied ?? 'Link copied') : (labels.copyLink ?? 'Copy link') }}
                     </button>
                 </div>
             </div>

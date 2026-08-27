@@ -17,10 +17,41 @@ use Illuminate\View\View;
 
 class PostController extends Controller
 {
+    /**
+     * Columns the list may be ordered by, and which way each one starts.
+     *
+     * A whitelist rather than a passthrough: the key arrives in the query
+     * string and ends up in an ORDER BY, and anything not named here is
+     * ignored rather than trusted.
+     *
+     * The starting direction is the one a reader means by "sort by this" -
+     * newest first for a date, most-read first for a view count, A to Z for a
+     * name. Getting that wrong costs a second click every time.
+     */
+    private const SORTS = [
+        'title' => ['column' => 'title', 'default' => 'asc'],
+        'category' => ['column' => 'category', 'default' => 'asc'],
+        'status' => ['column' => 'status', 'default' => 'asc'],
+        'views' => ['column' => 'views_count', 'default' => 'desc'],
+        'created' => ['column' => 'created_at', 'default' => 'desc'],
+        'updated' => ['column' => 'updated_at', 'default' => 'desc'],
+    ];
+
+    /**
+     * Newest first, by the date the post was written.
+     *
+     * The list used to open on updated_at, which meant editing a typo in a post
+     * from March pushed it above everything published since. Creation order is
+     * the one that matches how an editor thinks about their own archive.
+     */
+    private const DEFAULT_SORT = 'created';
+
     public function __construct(private readonly PostService $posts) {}
 
     public function index(Request $request): View
     {
+        [$sort, $direction] = $this->sortFrom($request);
+
         $posts = Post::query()
             ->with(['author:id,name', 'category:id,name,color'])
             ->when($request->filled('search'), fn ($query) => $query->search($request->string('search')->toString()))
@@ -38,7 +69,7 @@ class PostController extends Controller
             // midnight and hiding the whole day's work.
             ->when($request->filled('from'), fn ($query) => $query->whereDate('created_at', '>=', $request->date('from')))
             ->when($request->filled('to'), fn ($query) => $query->whereDate('created_at', '<=', $request->date('to')))
-            ->latest('updated_at')
+            ->tap(fn ($query) => $this->applySort($query, $sort, $direction))
             ->paginate(20)
             ->withQueryString();
 
@@ -53,7 +84,54 @@ class PostController extends Controller
                 ->pluck('total', 'status'),
             'trashedCount' => Post::onlyTrashed()->count(),
             'filters' => $request->only('search', 'status', 'category', 'source', 'trashed', 'from', 'to'),
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
+    }
+
+    /**
+     * The column and direction to order by, taken from the request and
+     * clamped to what is actually sortable.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function sortFrom(Request $request): array
+    {
+        $sort = $request->string('sort')->toString();
+        $sort = isset(self::SORTS[$sort]) ? $sort : self::DEFAULT_SORT;
+
+        $direction = strtolower($request->string('direction')->toString());
+
+        // An unrecognised direction falls back to the column's own default
+        // rather than to a fixed one, so a bare ?sort=title still opens A-Z.
+        if (! in_array($direction, ['asc', 'desc'], true)) {
+            $direction = self::SORTS[$sort]['default'];
+        }
+
+        return [$sort, $direction];
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<Post>  $query
+     */
+    private function applySort($query, string $sort, string $direction): void
+    {
+        // Category lives on another table. A correlated subquery sorts by its
+        // name without a join, which would otherwise have to be a left join to
+        // keep uncategorised posts in the list at all.
+        if ($sort === 'category') {
+            $query->orderBy(
+                Category::select('name')->whereColumn('categories.id', 'posts.category_id')->limit(1),
+                $direction,
+            );
+        } else {
+            $query->orderBy(self::SORTS[$sort]['column'], $direction);
+        }
+
+        // A stable tiebreaker. Without it two posts written in the same second
+        // - which the seeder and the bulk importer both produce - can swap
+        // places between page 1 and page 2 and appear twice or not at all.
+        $query->orderBy('id', 'desc');
     }
 
     public function create(): View

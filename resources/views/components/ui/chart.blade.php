@@ -5,10 +5,14 @@
     'color' => null,
     'height' => 220,
     'format' => 'M j',
+    'rawLabels' => false,
 ])
 
 @php
     $series = collect($points);
+    $labels = $rawLabels
+        ? $series->pluck('label')->all()
+        : $series->map(fn (array $point): string => \Illuminate\Support\Carbon::parse($point['date'])->format($format))->all();
 
     // Built here rather than inline in the attribute: Blade cannot parse a
     // multi-line array literal inside an HTML attribute.
@@ -16,9 +20,7 @@
         'type' => $type,
         'label' => $label,
         'color' => $color,
-        'labels' => $series
-            ->map(fn (array $point): string => \Illuminate\Support\Carbon::parse($point['date'])->format($format))
-            ->all(),
+        'labels' => $labels,
         'data' => $series->pluck('total')->map(fn ($total): int => (int) $total)->all(),
     ];
 @endphp
