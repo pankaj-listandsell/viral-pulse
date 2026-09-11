@@ -68,10 +68,14 @@ class SettingsService
             $setting = Setting::firstWhere('key', $key);
 
             if (! $setting) {
-                continue;
+                $setting = new Setting(['key' => $key]);
+                $setting->type = is_bool($value) ? SettingType::Boolean : SettingType::String;
+                $setting->group = 'seo';
+                $setting->is_public = true;
             }
 
-            $setting->update(['value' => $setting->type->serialize($value)]);
+            $setting->value = $setting->type->serialize($value);
+            $setting->save();
         }
 
         $this->flush();

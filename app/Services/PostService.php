@@ -97,6 +97,18 @@ class PostService
         $this->refreshCounters($post);
         $this->logger->log('post.published', $post, "Published \"{$post->title}\"");
 
+        try {
+            app(IndexNowService::class)->ping($post);
+        } catch (\Throwable) {
+            // IndexNow failures should never fail the publish transaction
+        }
+
+        try {
+            app(TelegramService::class)->broadcast($post);
+        } catch (\Throwable) {
+            // Telegram failures should never fail the publish transaction
+        }
+
         return $post;
     }
 

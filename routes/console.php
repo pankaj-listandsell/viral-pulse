@@ -80,6 +80,11 @@ Schedule::command('content:generate-daily-horoscope')
     ->between('05:00', '10:00')
     ->withoutOverlapping(30);
 
+// Morning Horoscope Push Notification to all subscribed users
+Schedule::command('push:daily-horoscope')
+    ->dailyAt('08:00')
+    ->withoutOverlapping(15);
+
 /*
  * The readings on the horoscope pages themselves, in every language.
  *

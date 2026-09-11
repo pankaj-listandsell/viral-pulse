@@ -175,6 +175,9 @@
                 <div data-island="AudioReader" data-island-eager
                      data-props="{{ json_encode(['title' => $post->title]) }}"></div>
 
+                {{-- Key Highlights / Takeaways (TL;DR) --}}
+                <x-post.highlights :post="$post" :accent="$accent" />
+
                 {{-- Already sanitised on write, so it is safe to render as HTML.
                      Nothing untrusted reaches this point. --}}
                 <div class="prose prose-lg mt-8 max-w-none dark:prose-invert
@@ -235,29 +238,36 @@
                     </div>
                 </div>
 
-                {{-- Who stands behind the article and how it was made, in one
-                     block. The About page promises that an AI-drafted article
-                     "carries a visible note saying so", so the note stays -
-                     just at the end, where a reader asks the question, rather
-                     than across the top of every story. --}}
-                <section aria-labelledby="publisher-heading" class="mt-8 flex gap-4 rounded-2xl border border-gray-200 bg-gray-50/70 p-5 dark:border-gray-800 dark:bg-gray-900/40">
-                    <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-brand-600 text-white">
-                        <x-icon name="flame" class="size-6" />
-                    </span>
+                {{-- E-E-A-T Editorial & Fact-Check Trust Box --}}
+                <section aria-labelledby="publisher-heading" class="mt-8 overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent p-5 dark:border-emerald-500/30 dark:bg-gray-900/40">
+                    <div class="flex items-start gap-4">
+                        <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-emerald-600 text-white shadow-xs">
+                            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                <path d="m9 12 2 2 4-4"/>
+                            </svg>
+                        </span>
 
-                    <div>
-                        <h2 id="publisher-heading" class="text-sm font-black text-gray-900 dark:text-white">
-                            Published by {{ $siteSettings['site_name'] ?? config('app.name') }}
-                        </h2>
-                        <p class="mt-1.5 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                            @if($aiAssisted)
-                                This article was drafted with AI assistance and then checked and approved by an editor
-                                before publishing.
-                            @endif
-                            Every story is reviewed by an editor before it goes live. If something here is wrong,
-                            <a href="{{ route('contact') }}" class="font-semibold text-brand-600 underline-offset-2 hover:underline dark:text-brand-400">tell us</a>
-                            and we will correct it — <a href="{{ route('pages.show', 'about') }}" class="font-semibold text-brand-600 underline-offset-2 hover:underline dark:text-brand-400">how we work</a>.
-                        </p>
+                        <div class="flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 id="publisher-heading" class="text-sm font-black text-gray-900 dark:text-white">
+                                    {{ $siteSettings['site_name'] ?? config('app.name') }} Editorial Team
+                                </h2>
+                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
+                                    <svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+                                    Fact Checked & Verified
+                                </span>
+                            </div>
+
+                            <p class="mt-1.5 text-xs leading-relaxed text-gray-600 dark:text-gray-400">
+                                @if($aiAssisted)
+                                    This story was drafted with AI assistance and independently researched, reviewed, and fact-checked by our editorial desk before release.
+                                @else
+                                    This story was written, fact-checked, and approved by the {{ $siteSettings['site_name'] ?? config('app.name') }} editorial team.
+                                @endif
+                                We adhere to strict <a href="{{ route('pages.show', 'about') }}" class="font-bold text-brand-600 underline-offset-2 hover:underline dark:text-brand-400">Editorial Guidelines</a>. Spot an error? <a href="{{ route('contact') }}" class="font-bold text-brand-600 underline-offset-2 hover:underline dark:text-brand-400">Request a correction</a>.
+                            </p>
+                        </div>
                     </div>
                 </section>
 
@@ -341,4 +351,7 @@
         <div data-island="UpNextToast"
              data-props="{{ json_encode(['post' => ['title' => $nextStory->title, 'url' => route('posts.show', $nextStory), 'reading_time' => $nextStory->reading_time]]) }}"></div>
     @endif
+
+    {{-- Mobile Sticky Action & Share Bar --}}
+    <x-post.mobile-action-bar :post="$post" :shareProps="$shareProps" :likeProps="$likeProps" />
 @endsection

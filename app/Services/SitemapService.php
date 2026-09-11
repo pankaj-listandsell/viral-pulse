@@ -27,6 +27,7 @@ class SitemapService
 
     private const CACHE_KEYS = [
         'sitemap.index',
+        'sitemap.news',
         'sitemap.categories',
         'sitemap.tags',
         'sitemap.pages',
@@ -36,6 +37,11 @@ class SitemapService
     {
         return Cache::remember('sitemap.index', now()->addMinutes(self::TTL_MINUTES), function (): string {
             $entries = [];
+
+            $entries[] = [
+                'loc' => route('sitemap.news'),
+                'lastmod' => $this->latestPostUpdate(),
+            ];
 
             for ($page = 1; $page <= max(1, $this->postPageCount()); $page++) {
                 $entries[] = [
@@ -49,6 +55,42 @@ class SitemapService
             $entries[] = ['loc' => route('sitemap.pages'), 'lastmod' => null];
 
             return $this->render($entries, 'sitemapindex', 'sitemap');
+        });
+    }
+
+    public function news(): string
+    {
+        return Cache::remember('sitemap.news', now()->addMinutes(15), function (): string {
+            $siteName = app(SettingsService::class)->get('site_name') ?: config('app.name');
+            $posts = $this->publishedPosts()
+                ->where('published_at', '>=', now()->subHours(48))
+                ->orderByDesc('published_at')
+                ->limit(1000)
+                ->get(['slug', 'title', 'published_at', 'language']);
+
+            $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+            $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">'."\n";
+
+            foreach ($posts as $post) {
+                $lang = $post->language ?: 'en';
+                $pubDate = $post->published_at instanceof Carbon ? $post->published_at : Carbon::parse($post->published_at);
+
+                $xml .= '  <url>'."\n";
+                $xml .= '    <loc>'.htmlspecialchars(route('posts.show', $post->slug), ENT_XML1 | ENT_QUOTES, 'UTF-8').'</loc>'."\n";
+                $xml .= '    <news:news>'."\n";
+                $xml .= '      <news:publication>'."\n";
+                $xml .= '        <news:name>'.htmlspecialchars($siteName, ENT_XML1 | ENT_QUOTES, 'UTF-8').'</news:name>'."\n";
+                $xml .= '        <news:language>'.htmlspecialchars($lang, ENT_XML1 | ENT_QUOTES, 'UTF-8').'</news:language>'."\n";
+                $xml .= '      </news:publication>'."\n";
+                $xml .= '      <news:publication_date>'.$pubDate->toAtomString().'</news:publication_date>'."\n";
+                $xml .= '      <news:title>'.htmlspecialchars($post->title, ENT_XML1 | ENT_QUOTES, 'UTF-8').'</news:title>'."\n";
+                $xml .= '    </news:news>'."\n";
+                $xml .= '  </url>'."\n";
+            }
+
+            $xml .= '</urlset>'."\n";
+
+            return $xml;
         });
     }
 

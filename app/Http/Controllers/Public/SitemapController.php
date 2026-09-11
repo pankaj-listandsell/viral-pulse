@@ -15,6 +15,11 @@ class SitemapController extends Controller
         return $this->xml($this->sitemap->index());
     }
 
+    public function news(): Response
+    {
+        return $this->xml($this->sitemap->news());
+    }
+
     public function posts(int $page): Response
     {
         // Out-of-range pages 404 rather than serving an empty sitemap, so a

@@ -82,6 +82,7 @@ Route::get('sitemap', [PageController::class, 'sitemapPlaceholder'])->name('site
  */
 Route::controller(SitemapController::class)->group(function () {
     Route::get('sitemap.xml', 'index')->name('sitemap.index');
+    Route::get('sitemap-news.xml', 'news')->name('sitemap.news');
     Route::get('sitemap-posts-{page}.xml', 'posts')->whereNumber('page')->name('sitemap.posts');
     Route::get('sitemap-categories.xml', 'categories')->name('sitemap.categories');
     Route::get('sitemap-tags.xml', 'tags')->name('sitemap.tags');

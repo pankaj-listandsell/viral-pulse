@@ -15,55 +15,49 @@ const isSubscribed = ref(false);
 async function checkPermission() {
     if (!isSupported || !props.appId) return;
 
-    // Check if OneSignal is loaded
-    if (typeof window.OneSignal !== 'undefined') {
-        const optedIn = window.OneSignal.User?.PushSubscription?.optedIn ?? false;
-        if (optedIn) {
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async function(OneSignal) {
+        const optedIn = OneSignal.User?.PushSubscription?.optedIn ?? false;
+        if (optedIn || Notification.permission === 'granted') {
             isSubscribed.value = true;
             isVisible.value = false;
             return;
         }
-    }
 
-    if (Notification.permission === 'granted') {
-        isSubscribed.value = true;
-        isVisible.value = false;
-    } else if (Notification.permission === 'default') {
-        const dismissedAt = localStorage.getItem('viral_push_dismissed_at');
-        const now = Date.now();
-        // Prompt again only after 24 hours if dismissed
-        if (!dismissedAt || now - parseInt(dismissedAt, 10) > 24 * 60 * 60 * 1000) {
-            setTimeout(() => {
-                isVisible.value = true;
-            }, 4000);
+        if (Notification.permission === 'default') {
+            const dismissedAt = localStorage.getItem('viral_push_dismissed_at');
+            const now = Date.now();
+            if (!dismissedAt || now - parseInt(dismissedAt, 10) > 24 * 60 * 60 * 1000) {
+                setTimeout(() => {
+                    isVisible.value = true;
+                }, 2000);
+            }
         }
-    }
+    });
 }
 
 async function subscribe() {
     if (!isSupported) return;
 
     try {
-        if (typeof window.OneSignal !== 'undefined') {
-            await window.OneSignal.User.PushSubscription.optIn();
-            isSubscribed.value = true;
-            isVisible.value = false;
-            localStorage.setItem('viral_push_subscribed', 'true');
-        } else {
-            // Fallback to native browser notifications if OneSignal script failed to load
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(async function(OneSignal) {
+            try {
+                await OneSignal.User.PushSubscription.optIn();
                 isSubscribed.value = true;
                 isVisible.value = false;
                 localStorage.setItem('viral_push_subscribed', 'true');
-                new Notification('ViralPulse ⚡', {
-                    body: 'Thanks for subscribing! You will receive instant breaking news updates.',
-                    icon: '/favicon.ico',
-                });
-            } else {
-                dismiss();
+            } catch (err) {
+                console.error('OneSignal optIn error:', err);
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    isSubscribed.value = true;
+                    isVisible.value = false;
+                } else {
+                    dismiss();
+                }
             }
-        }
+        });
     } catch {
         dismiss();
     }
@@ -75,10 +69,7 @@ function dismiss() {
 }
 
 onMounted(() => {
-    // Delay slightly to let OneSignal script initialize
-    setTimeout(() => {
-        checkPermission();
-    }, 1500);
+    checkPermission();
 });
 </script>
 
