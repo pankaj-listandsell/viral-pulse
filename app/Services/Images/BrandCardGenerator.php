@@ -70,6 +70,8 @@ class BrandCardGenerator implements FeaturedImageGenerator
 
     public function generate(Post $post): ?Media
     {
+        $post->loadMissing(['category', 'author']);
+
         $blackFont = $this->blackFont();
 
         if (! function_exists('imagettftext') || ! $blackFont || ! is_file($blackFont)) {

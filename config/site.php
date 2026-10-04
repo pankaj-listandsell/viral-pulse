@@ -89,23 +89,20 @@ return [
         |
         */
         'strategy' => [
-            '*' => ['card'],
-
-            // A photograph of a trading floor or a phone illustrates the
-            // subject without claiming to be the story.
-            'business' => ['stock', 'card'],
-            'technology' => ['stock', 'card'],
-            'sports' => ['stock', 'card'],
-            'travel' => ['stock', 'card'],
-            'education' => ['stock', 'card'],
-            'health' => ['stock', 'card'],
-            'entertainment' => ['stock', 'card'],
-            'lifestyle' => ['stock', 'illustration', 'card'],
-
-            // Nothing factual is being depicted here, so a drawing is honest.
-            'astrology' => ['illustration', 'card'],
-            'devotional' => ['illustration', 'card'],
-            'quiz-fun' => ['illustration', 'card'],
+            '*' => ['illustration', 'stock', 'card'],
+            'news' => ['illustration', 'stock', 'card'],
+            'trending' => ['illustration', 'stock', 'card'],
+            'business' => ['illustration', 'stock', 'card'],
+            'technology' => ['illustration', 'stock', 'card'],
+            'sports' => ['illustration', 'stock', 'card'],
+            'travel' => ['illustration', 'stock', 'card'],
+            'education' => ['illustration', 'stock', 'card'],
+            'health' => ['illustration', 'stock', 'card'],
+            'entertainment' => ['illustration', 'stock', 'card'],
+            'lifestyle' => ['illustration', 'stock', 'card'],
+            'astrology' => ['illustration', 'stock', 'card'],
+            'devotional' => ['illustration', 'stock', 'card'],
+            'quiz-fun' => ['illustration', 'stock', 'card'],
         ],
 
         'stock' => [

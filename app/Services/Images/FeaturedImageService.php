@@ -36,11 +36,16 @@ class FeaturedImageService
             return false;
         }
 
+        $post->loadMissing(['category', 'tags', 'author']);
+
         $media = $this->generator->generate($post);
 
+        // Guaranteed safety net: if all strategies failed, draw a branded card locally
         if (! $media) {
-            // Already logged by the generator. A post without a picture is
-            // still a perfectly good post.
+            $media = $this->cards->generate($post);
+        }
+
+        if (! $media) {
             return false;
         }
 

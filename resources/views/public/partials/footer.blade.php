@@ -98,6 +98,12 @@
                 <ul class="mt-4 space-y-2.5 text-sm">
                     <li><a href="{{ route('latest') }}" class="text-gray-600 transition hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">Latest</a></li>
                     <li><a href="{{ route('trending') }}" class="text-gray-600 transition hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">Trending</a></li>
+                    <li>
+                        <a href="https://resume.viralpulse.in" target="_blank" rel="noopener"
+                           class="flex items-center gap-1 font-semibold text-emerald-600 transition hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300">
+                            <span aria-hidden="true">📄</span> Free Resume Builder
+                        </a>
+                    </li>
                     @if($horoscopeEnabled)
                         <li><a href="{{ $horoscopeUrl }}" class="flex items-center gap-1 text-gray-600 transition hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400"><span aria-hidden="true">✨</span> {{ __('horoscope.seo.breadcrumb_horoscope') }}</a></li>
                         <li><a href="{{ $compatibilityUrl }}" class="flex items-center gap-1 text-gray-600 transition hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400"><span aria-hidden="true">💖</span> {{ __('horoscope.seo.breadcrumb_compatibility') }}</a></li>

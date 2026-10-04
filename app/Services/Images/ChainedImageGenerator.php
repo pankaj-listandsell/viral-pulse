@@ -6,6 +6,7 @@ use App\Models\Media;
 use App\Models\Post;
 use App\Services\Images\Contracts\FeaturedImageGenerator;
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Picks how a post gets its picture, based on the section it is in.
@@ -22,8 +23,8 @@ use Illuminate\Contracts\Container\Container;
 class ChainedImageGenerator implements FeaturedImageGenerator
 {
     private const GENERATORS = [
-        'stock' => StockPhotoGenerator::class,
         'illustration' => AiIllustrationGenerator::class,
+        'stock' => StockPhotoGenerator::class,
         'card' => BrandCardGenerator::class,
     ];
 
@@ -36,6 +37,8 @@ class ChainedImageGenerator implements FeaturedImageGenerator
 
     public function generate(Post $post): ?Media
     {
+        $post->loadMissing(['tags', 'category', 'author']);
+
         foreach ($this->strategies($post) as $strategy) {
             $class = self::GENERATORS[$strategy] ?? null;
 
@@ -43,14 +46,24 @@ class ChainedImageGenerator implements FeaturedImageGenerator
                 continue;
             }
 
-            $media = $this->container->make($class)->generate($post);
+            try {
+                $media = $this->container->make($class)->generate($post);
 
-            if ($media) {
-                return $media;
+                if ($media) {
+                    return $media;
+                }
+            } catch (\Throwable $e) {
+                Log::warning("Image generator strategy [{$strategy}] failed for post {$post->id}: {$e->getMessage()}");
             }
         }
 
-        return null;
+        // Ultimate safety: under no condition should image generation fail
+        try {
+            return $this->container->make(BrandCardGenerator::class)->generate($post);
+        } catch (\Throwable $e) {
+            Log::error("Ultimate BrandCardGenerator fallback failed for post {$post->id}: {$e->getMessage()}");
+            return null;
+        }
     }
 
     /**

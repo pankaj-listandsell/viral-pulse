@@ -148,6 +148,16 @@
                     </a>
                 </li>
             @endif
+
+            <li class="{{ $horoscopeEnabled ? '' : 'ml-auto' }}">
+                <a href="https://resume.viralpulse.in"
+                   target="_blank"
+                   rel="noopener"
+                   title="Free AI Resume Builder"
+                   class="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25">
+                    <span aria-hidden="true">📄</span> Resume Builder
+                </a>
+            </li>
         </ul>
     </nav>
 
@@ -161,7 +171,7 @@
             </form>
 
             @if($horoscopeEnabled)
-                <div class="mb-4 grid grid-cols-2 gap-2">
+                <div class="mb-3 grid grid-cols-2 gap-2">
                     <a href="{{ $horoscopeUrl }}"
                        class="flex items-center justify-center gap-1.5 rounded-xl bg-violet-50 px-3 py-2.5 text-sm font-black text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
                         <span aria-hidden="true">✨</span> {{ __('horoscope.seo.breadcrumb_horoscope') }}
@@ -172,6 +182,13 @@
                     </a>
                 </div>
             @endif
+
+            <div class="mb-4">
+                <a href="https://resume.viralpulse.in" target="_blank" rel="noopener"
+                   class="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 px-3.5 py-2.5 text-sm font-black text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-300">
+                    <span aria-hidden="true">📄</span> Free AI Resume Builder
+                </a>
+            </div>
 
             <p class="mb-2 text-[11px] font-black uppercase tracking-wider text-gray-400">Sections</p>
             <ul class="grid grid-cols-2 gap-1">
@@ -186,6 +203,13 @@
                         </a>
                     </li>
                 @endforeach
+                <li>
+                    <a href="https://resume.viralpulse.in" target="_blank" rel="noopener"
+                       class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-emerald-600 hover:bg-gray-100 dark:text-emerald-400 dark:hover:bg-gray-800">
+                        <span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
+                        Resume Builder
+                    </a>
+                </li>
                 <li>
                     <a href="{{ route('categories.index') }}"
                        class="block rounded-lg px-3 py-2 text-sm font-bold text-brand-600 hover:bg-gray-100 dark:hover:bg-gray-800">

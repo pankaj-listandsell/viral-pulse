@@ -35,6 +35,26 @@ class StockPhotoGenerator implements FeaturedImageGenerator
         'why', 'what', 'when', 'who', 'top', 'best', 'full', 'says', 'said', 'will', 'can',
     ];
 
+    /**
+     * Category related contextual themes so that if an exact article query fails,
+     * Pexels finds a relevant, high quality topic image instead of returning empty.
+     */
+    private const CATEGORY_THEMES = [
+        'news' => ['breaking news journalism', 'newspaper media headline', 'news broadcast studio'],
+        'trending' => ['trending topic concept', 'viral news media', 'technology abstract concept'],
+        'technology' => ['modern technology', 'digital computer workspace', 'artificial intelligence future'],
+        'sports' => ['stadium arena lights', 'sports match competition', 'athletic action fitness'],
+        'business' => ['business finance market', 'stock exchange trading', 'modern corporate office'],
+        'entertainment' => ['cinema movie theater stage', 'entertainment spotlight', 'music concert performance'],
+        'lifestyle' => ['modern lifestyle daily', 'minimalist home living', 'wellness coffee morning'],
+        'health' => ['healthcare medicine doctor', 'wellness nutrition fitness', 'hospital scientific laboratory'],
+        'travel' => ['scenic travel landscape', 'mountain nature adventure', 'vacation destination wanderlust'],
+        'education' => ['books library university', 'education classroom study', 'student learning desk'],
+        'devotional' => ['temple spiritual meditation', 'morning peace sunrise prayer'],
+        'astrology' => ['night sky stars cosmos', 'galaxy constellation space', 'zodiac horoscope astrology'],
+        'quiz-fun' => ['colorful celebration festival', 'party confetti event', 'creative game puzzle'],
+    ];
+
     public function __construct(private readonly MediaService $media) {}
 
     public function name(): string
@@ -44,6 +64,8 @@ class StockPhotoGenerator implements FeaturedImageGenerator
 
     public function generate(Post $post): ?Media
     {
+        $post->loadMissing(['tags', 'category', 'author']);
+
         $config = config('site.media.stock');
 
         if (blank($config['key'] ?? null)) {
@@ -61,6 +83,17 @@ class StockPhotoGenerator implements FeaturedImageGenerator
             $photo = $this->search($query, $config);
             if ($photo) {
                 break;
+            }
+        }
+
+        // If specific searches yielded nothing, try the category theme or general fallback
+        if (! $photo) {
+            $fallbackQueries = $this->getFallbackQueries($post);
+            foreach ($fallbackQueries as $fbQuery) {
+                $photo = $this->search($fbQuery, $config);
+                if ($photo) {
+                    break;
+                }
             }
         }
 
@@ -107,6 +140,29 @@ class StockPhotoGenerator implements FeaturedImageGenerator
         }
 
         return array_values(array_unique(array_filter(array_map('trim', $queries))));
+    }
+
+    /**
+     * Related topic fallbacks so that if exact title searches fail, any relevant
+     * high-quality photo matching the category or general theme is used.
+     *
+     * @return array<int, string>
+     */
+    public function getFallbackQueries(Post $post): array
+    {
+        $fallbacks = [];
+        $slug = $post->category?->slug;
+
+        if ($slug && isset(self::CATEGORY_THEMES[$slug])) {
+            $fallbacks = array_merge($fallbacks, self::CATEGORY_THEMES[$slug]);
+        }
+
+        // Broad general fallbacks
+        $fallbacks[] = 'breaking news editorial';
+        $fallbacks[] = 'daily trending news';
+        $fallbacks[] = 'creative journalism media';
+
+        return array_values(array_unique(array_filter(array_map('trim', $fallbacks))));
     }
 
     /**
@@ -158,10 +214,27 @@ class StockPhotoGenerator implements FeaturedImageGenerator
             return null;
         }
 
+        $photos = collect($response->json('photos', []));
+        if ($photos->isEmpty()) {
+            return null;
+        }
+
         $minimum = (int) ($config['min_width'] ?? 1200);
 
-        return collect($response->json('photos', []))
-            ->first(fn (array $photo) => ($photo['width'] ?? 0) >= $minimum);
+        // 1. First priority: photo >= minimum width (e.g. 1200px)
+        $best = $photos->first(fn (array $photo) => ($photo['width'] ?? 0) >= $minimum);
+        if ($best) {
+            return $best;
+        }
+
+        // 2. Second priority: photo >= 600px
+        $medium = $photos->first(fn (array $photo) => ($photo['width'] ?? 0) >= 600);
+        if ($medium) {
+            return $medium;
+        }
+
+        // 3. Fallback: take the first available photo
+        return $photos->first();
     }
 
     /**

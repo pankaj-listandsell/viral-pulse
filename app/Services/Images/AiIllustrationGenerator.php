@@ -42,26 +42,34 @@ class AiIllustrationGenerator implements FeaturedImageGenerator
 
     public function generate(Post $post): ?Media
     {
-        $openAiKey = config('ai.providers.openai.key') ?: env('OPENAI_API_KEY');
-        if (filled($openAiKey)) {
-            $image = $this->requestOpenAi($post, $openAiKey);
-            if ($image) {
-                return $this->store($image, $post);
+        $post->loadMissing(['tags', 'category', 'author']);
+
+        try {
+            $openAiKey = config('ai.providers.openai.key') ?: env('OPENAI_API_KEY');
+            if (filled($openAiKey)) {
+                $image = $this->requestOpenAi($post, $openAiKey);
+                if ($image) {
+                    return $this->store($image, $post);
+                }
             }
-        }
 
-        $config = config('site.media.illustration');
-        $key = config('ai.providers.gemini.key') ?: ($config['key'] ?? null);
+            $config = config('site.media.illustration');
+            $key = config('ai.providers.gemini.key') ?: ($config['key'] ?? null);
 
-        if (blank($key)) {
+            if (blank($key)) {
+                return null;
+            }
+
+            $config['key'] = $key;
+
+            $image = $this->request($post, $config);
+
+            return $image ? $this->store($image, $post) : null;
+        } catch (\Throwable $e) {
+            Log::warning('AI illustration generation failed', ['post' => $post->id, 'error' => $e->getMessage()]);
+
             return null;
         }
-
-        $config['key'] = $key;
-
-        $image = $this->request($post, $config);
-
-        return $image ? $this->store($image, $post) : null;
     }
 
     private function requestOpenAi(Post $post, string $key): ?string
