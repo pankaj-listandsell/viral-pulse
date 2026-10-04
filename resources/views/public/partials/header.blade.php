@@ -77,7 +77,7 @@
          category, which is what removed the duplicate category strip the front
          page used to carry underneath. --}}
     <nav class="hidden border-t border-gray-100 lg:block dark:border-gray-800/70" aria-label="Sections">
-        <ul class="mx-auto flex max-w-6xl items-center gap-1 px-4 sm:px-6">
+        <ul class="mx-auto flex max-w-6xl items-center gap-1 overflow-x-auto px-4 sm:px-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             @php
                 $primary = collect([
                     ['label' => 'Latest', 'url' => route('latest'), 'active' => request()->routeIs('latest')],
@@ -85,10 +85,10 @@
                 ]);
             @endphp
 
-            <li>
+            <li class="shrink-0">
                 <a href="{{ route('home') }}"
                    @class([
-                       'relative block px-3 py-2.5 text-sm font-bold transition',
+                       'relative block whitespace-nowrap px-3 py-2.5 text-sm font-bold transition',
                        'text-brand-600 dark:text-brand-400' => request()->routeIs('home'),
                        'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white' => ! request()->routeIs('home'),
                    ])
@@ -101,10 +101,10 @@
             </li>
 
             @foreach($primary as $item)
-                <li>
+                <li class="shrink-0">
                     <a href="{{ $item['url'] }}"
                        @class([
-                           'relative block px-3 py-2.5 text-sm font-bold transition',
+                           'relative block whitespace-nowrap px-3 py-2.5 text-sm font-bold transition',
                            'text-brand-600 dark:text-brand-400' => $item['active'],
                            'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white' => ! $item['active'],
                        ])
@@ -119,10 +119,10 @@
 
             @foreach($nav as $category)
                 @php $isActive = $activeCategoryId === $category->id; @endphp
-                <li>
+                <li class="shrink-0">
                     <a href="{{ route('categories.show', $category) }}"
                        @class([
-                           'relative block px-3 py-2.5 text-sm font-medium transition',
+                           'relative block whitespace-nowrap px-3 py-2.5 text-sm font-medium transition',
                            'text-gray-900 dark:text-white' => $isActive,
                            'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white' => ! $isActive,
                        ])
@@ -136,10 +136,10 @@
             @endforeach
 
             @if($horoscopeEnabled)
-                <li class="ml-auto">
+                <li class="ml-auto shrink-0">
                     <a href="{{ $horoscopeUrl }}"
                        @class([
-                           'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-bold transition',
+                           'flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-bold transition',
                            'bg-violet-600 text-white' => request()->routeIs('horoscope*'),
                            'bg-violet-50 text-violet-700 hover:bg-violet-100 dark:bg-violet-500/15 dark:text-violet-300 dark:hover:bg-violet-500/25' => ! request()->routeIs('horoscope*'),
                        ])
@@ -149,12 +149,12 @@
                 </li>
             @endif
 
-            <li class="{{ $horoscopeEnabled ? '' : 'ml-auto' }}">
+            <li class="{{ $horoscopeEnabled ? '' : 'ml-auto' }} shrink-0">
                 <a href="https://resume.viralpulse.in"
                    target="_blank"
                    rel="noopener"
                    title="Free AI Resume Builder"
-                   class="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25">
+                   class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 px-3.5 py-1.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25">
                     <span aria-hidden="true">📄</span> Resume Builder
                 </a>
             </li>
@@ -185,8 +185,8 @@
 
             <div class="mb-4">
                 <a href="https://resume.viralpulse.in" target="_blank" rel="noopener"
-                   class="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 px-3.5 py-2.5 text-sm font-black text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-300">
-                    <span aria-hidden="true">📄</span> Free AI Resume Builder
+                   class="flex items-center justify-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50 px-3.5 py-2.5 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-800/40 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    <span aria-hidden="true">📄</span> Free AI Resume Builder &rarr;
                 </a>
             </div>
 
@@ -203,13 +203,6 @@
                         </a>
                     </li>
                 @endforeach
-                <li>
-                    <a href="https://resume.viralpulse.in" target="_blank" rel="noopener"
-                       class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-emerald-600 hover:bg-gray-100 dark:text-emerald-400 dark:hover:bg-gray-800">
-                        <span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
-                        Resume Builder
-                    </a>
-                </li>
                 <li>
                     <a href="{{ route('categories.index') }}"
                        class="block rounded-lg px-3 py-2 text-sm font-bold text-brand-600 hover:bg-gray-100 dark:hover:bg-gray-800">
