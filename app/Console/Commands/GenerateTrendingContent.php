@@ -18,8 +18,10 @@ class GenerateTrendingContent extends Command
     {
         // In immediate mode this command is scheduled every minute and does
         // nothing until one of the configured times arrives, because that time
-        // is when the writing should happen. --force skips the wait.
-        if ($window->publishesImmediately() && ! $this->option('force') && ! $window->isSlotTimeNow()) {
+        // is when the writing should happen. The first tick within a few
+        // minutes of the time claims it, so a cron that only runs every five
+        // minutes - or late - still catches every slot. --force skips the wait.
+        if ($window->publishesImmediately() && ! $this->option('force') && ! $window->claimDueSlot()) {
             return self::SUCCESS;
         }
 

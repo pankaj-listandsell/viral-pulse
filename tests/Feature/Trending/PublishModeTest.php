@@ -146,6 +146,65 @@ class PublishModeTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_a_five_minute_cron_still_catches_every_slot_once(): void
+    {
+        config(['trending.publishing.mode' => 'immediate']);
+        $this->topic();
+        $this->topic();
+        Queue::fake();
+
+        // Shared hosting: the tick nearest 13:00 landed at 13:03.
+        Carbon::setTestNow(today()->setTime(13, 3));
+        $this->artisan('content:generate-trending --limit=1')->assertSuccessful();
+        Queue::assertPushed(GenerateAiContentJob::class, 1);
+
+        // The next tick is still inside the grace period, but the 13:00 slot
+        // is taken, so no second article is written for it.
+        Carbon::setTestNow(today()->setTime(13, 8));
+        $this->artisan('content:generate-trending --limit=1')->assertSuccessful();
+        Queue::assertPushed(GenerateAiContentJob::class, 1);
+
+        // Well past the slot, nothing.
+        Carbon::setTestNow(today()->setTime(13, 30));
+        $this->artisan('content:generate-trending --limit=1')->assertSuccessful();
+        Queue::assertPushed(GenerateAiContentJob::class, 1);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_immediate_mode_respects_the_daily_maximum(): void
+    {
+        config([
+            'trending.publishing.mode' => 'immediate',
+            'trending.publishing.max_per_day' => 3,
+            'trending.automation.per_run' => 2,
+        ]);
+        Carbon::setTestNow(today()->setTime(13, 0));
+        Queue::fake();
+
+        $this->topic();
+        $this->topic();
+        $this->topic();
+
+        // Two already out today, by hand or otherwise: one more is allowed,
+        // although a run would normally start two.
+        Post::factory()->count(2)->create([
+            'status' => PostStatus::Published,
+            'published_at' => today()->setTime(9, 0),
+        ]);
+
+        $this->artisan('content:generate-trending')->assertSuccessful();
+        Queue::assertPushed(GenerateAiContentJob::class, 1);
+
+        // The next slot finds the cap reached - the article started above is
+        // still being written and already counts.
+        Carbon::setTestNow(today()->setTime(14, 0));
+        $this->artisan('content:generate-trending')->assertSuccessful();
+        Queue::assertPushed(GenerateAiContentJob::class, 1);
+
+        Carbon::setTestNow();
+    }
+
     public function test_force_ignores_the_clock(): void
     {
         config(['trending.publishing.mode' => 'immediate']);

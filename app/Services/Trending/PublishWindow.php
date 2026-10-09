@@ -2,11 +2,14 @@
 
 namespace App\Services\Trending;
 
+use App\Enums\AiGenerationStatus;
 use App\Enums\PostStatus;
+use App\Models\AiGeneration;
 use App\Models\Post;
 use App\Rules\ValidTimeList;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Works out when an automatically generated article should go live.
@@ -84,6 +87,41 @@ class PublishWindow
         }
 
         return false;
+    }
+
+    /**
+     * Claim the configured time that has most recently arrived, once.
+     *
+     * isSlotTimeNow() allows one minute, which assumes the scheduler runs
+     * every minute. Shared hosting runs cron every five minutes at best and
+     * often late, so a 13:00 slot whose tick landed at 13:01:10 was simply
+     * lost - no article that hour. This allows a grace period instead, and
+     * claims the slot atomically so the 13:05 tick does not write a second
+     * article for the same 13:00 slot.
+     *
+     * @return Carbon|null the slot claimed, or null when none is due or it
+     *                     was already claimed by an earlier tick
+     */
+    public function claimDueSlot(int $graceMinutes = 10): ?Carbon
+    {
+        $times = ValidTimeList::parse((string) config('trending.publishing.slots'));
+
+        foreach (array_reverse($times) as $time) {
+            [$hour, $minute] = array_map('intval', explode(':', $time));
+            $slot = today()->setTime($hour, $minute);
+
+            if (! now()->between($slot, $slot->copy()->addMinutes($graceMinutes))) {
+                continue;
+            }
+
+            // Cache::add only succeeds for the first caller, so two ticks
+            // inside the grace period cannot both take the slot.
+            return Cache::add('publish-slot:'.$slot->format('Y-m-d H:i'), true, now()->addDay())
+                ? $slot
+                : null;
+        }
+
+        return null;
     }
 
     public function nextSlot(array $reserved = []): ?Carbon
@@ -210,6 +248,27 @@ class PublishWindow
         }
 
         return null;
+    }
+
+    /**
+     * How many more articles today's cap allows.
+     *
+     * Write-ahead mode enforces the cap while choosing slots; immediate mode
+     * has no slots to choose, so it asks this instead. Counted against what
+     * is already out today - published by hand or automatically - plus what
+     * is being written right now and will be out within minutes, so two
+     * slots close together cannot both spend the same remainder.
+     */
+    public function remainingToday(): int
+    {
+        $max = max(1, (int) config('trending.publishing.max_per_day', 8));
+
+        $inFlight = AiGeneration::query()
+            ->whereIn('status', [AiGenerationStatus::Pending, AiGenerationStatus::Processing])
+            ->where('created_at', '>=', today())
+            ->count();
+
+        return max(0, $max - $this->slotsOn(today())->count() - $inFlight);
     }
 
     /**

@@ -64,6 +64,16 @@ class TrendingContentPlanner
             return ['queued' => 0, 'slots' => [], 'reason' => 'No active admin account to attribute posts to.'];
         }
 
+        // Immediate mode has no slot search to enforce the daily cap, so it
+        // is applied here: never start more than today still allows.
+        if ($this->window->publishesImmediately()) {
+            $limit = min($limit, $this->window->remainingToday());
+
+            if ($limit === 0) {
+                return ['queued' => 0, 'slots' => [], 'reason' => 'Today\'s maximum posts per day has been reached.'];
+            }
+        }
+
         $topics = $this->eligible($limit);
 
         if ($topics->isEmpty()) {
