@@ -277,7 +277,10 @@ class PostController extends Controller
             }
         }
 
-        $media = app(\App\Services\Images\AiIllustrationGenerator::class)->generate($post);
+        // Gemini first, as the editor asked for an AI picture; its free image
+        // quota runs out quickly, so Cloudflare draws it when Gemini cannot.
+        $media = app(\App\Services\Images\AiIllustrationGenerator::class)->generate($post)
+            ?? app(\App\Services\Images\CloudflareImageGenerator::class)->generate($post);
 
         if ($media) {
             $post->forceFill([
@@ -296,7 +299,7 @@ class PostController extends Controller
 
         return response()->json([
             'success' => false,
-            'error' => 'Failed to generate AI image. Please verify your OpenAI or Gemini API keys are configured correctly.',
+            'error' => 'Failed to generate AI image. Please verify your Gemini or Cloudflare keys are configured correctly.',
         ], 422);
     }
 

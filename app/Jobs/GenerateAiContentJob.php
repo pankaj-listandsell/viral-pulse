@@ -11,6 +11,7 @@ use App\Models\Post;
 use App\Models\TrendingTopic;
 use App\Models\User;
 use App\Services\AI\AiContentService;
+use App\Services\AuthorPicker;
 use App\Services\AI\Exceptions\AiGenerationException;
 use App\Services\AI\GenerationRequest;
 use App\Services\Images\FeaturedImageService;
@@ -18,6 +19,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Throwable;
 
 class GenerateAiContentJob implements ShouldQueue
@@ -48,6 +51,8 @@ class GenerateAiContentJob implements ShouldQueue
         public readonly ?int $categoryId = null,
         public readonly bool $createPost = true,
         public readonly ?string $publishAt = null,
+        // A media path to use as the featured image instead of generating one.
+        public readonly ?string $featuredImage = null,
     ) {}
 
     /**
@@ -103,8 +108,13 @@ class GenerateAiContentJob implements ShouldQueue
             return;
         }
 
-        $author = User::find($this->userId) ?? User::admins()->first();
         $categoryId = $this->categoryId ?? $this->fallbackCategoryId($request);
+
+        // The section's desk bylines the article; the admin who asked for it
+        // stays recorded on the generation, not on the byline.
+        $author = app(AuthorPicker::class)->forCategory($categoryId)
+            ?? User::find($this->userId)
+            ?? User::admins()->first();
 
         if (! $author || ! $categoryId) {
             Log::warning('Generated content could not be turned into a post', [
@@ -127,6 +137,15 @@ class GenerateAiContentJob implements ShouldQueue
             $categoryId,
             allowAutoPublish: $this->publishAt === null,
         );
+
+        // A picture chosen up front wins; ensure() then sees it and draws
+        // nothing. Checked on disk so a missing file falls back to drawing.
+        if ($this->featuredImage && Storage::disk(config('site.media.disk'))->exists($this->featuredImage)) {
+            $post->forceFill([
+                'featured_image' => $this->featuredImage,
+                'featured_image_alt' => Str::limit($post->title, 120, ''),
+            ])->save();
+        }
 
         // Before scheduling, so the card exists by the time the post is public.
         app(FeaturedImageService::class)->ensure($post);

@@ -45,7 +45,7 @@ class SettingsConfigBridge
         // Secrets. .env stays the fallback, so nothing breaks for an install
         // that has not moved its keys yet.
         'gemini_api_key' => 'ai.providers.gemini.key',
-        'openai_api_key' => 'ai.providers.openai.key',
+        'cloudflare_ai_token' => 'ai.providers.cloudflare.key',
         'news_api_key' => 'trending.sources.news_api.key',
 
         'ai_max_tokens' => 'ai.max_tokens',

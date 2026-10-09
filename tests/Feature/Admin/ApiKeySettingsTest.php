@@ -82,7 +82,7 @@ class ApiKeySettingsTest extends TestCase
 
         // The field is never prefilled, so a blank submit is what happens every
         // time anyone edits an unrelated setting on this tab.
-        $this->save(['openai_api_key' => 'another-key'])->assertSessionHasNoErrors();
+        $this->save(['cloudflare_ai_token' => 'another-key'])->assertSessionHasNoErrors();
 
         app(SettingsConfigBridge::class)->apply();
 

@@ -84,14 +84,11 @@ class ImageStrategyTest extends TestCase
 
     public function test_illustrations_are_skipped_when_no_key_is_configured(): void
     {
-        // Both providers, because the generator tries OpenAI first and falls
-        // back to Gemini. Nulling one alone still reaches for the other.
+        // Both places the Gemini key can come from.
         config([
             'site.media.illustration.key' => null,
             'ai.providers.gemini.key' => null,
-            'ai.providers.openai.key' => null,
         ]);
-        putenv('OPENAI_API_KEY=');
 
         Http::fake();
 
@@ -137,15 +134,11 @@ class ImageStrategyTest extends TestCase
 
     public function test_an_illustration_carries_its_disclosure_and_refuses_real_people(): void
     {
-        // Gemini only: OpenAI is tried first, so it is switched off to keep the
-        // test on one path.
         config([
-            'ai.providers.openai.key' => null,
             'ai.providers.gemini.key' => 'test-key',
             'site.media.illustration.key' => 'test-key',
             'site.media.illustration.model' => 'gemini-image-test',
         ]);
-        putenv('OPENAI_API_KEY=');
 
         Http::fake([
             'generativelanguage.googleapis.com/*' => Http::response([

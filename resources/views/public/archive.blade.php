@@ -20,6 +20,9 @@
 
             <div class="relative">
                 <h1 class="flex items-center gap-3 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl dark:text-white">
+                    @isset($author)
+                        <x-author.avatar :author="$author" size="size-12 text-xl" />
+                    @endisset
                     @if($accentColor)
                         <span class="size-3 shrink-0 rounded-full" style="background-color: {{ $accentColor }};" aria-hidden="true"></span>
                     @endif

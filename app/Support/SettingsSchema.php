@@ -178,8 +178,8 @@ final class SettingsSchema
                 'fields' => [
                     ['key' => 'gemini_api_key', 'label' => 'Gemini API key', 'input' => 'secret', 'rules' => ['nullable', 'string', 'max:400'],
                         'help' => 'From aistudio.google.com/apikey. Needed for the article writer.'],
-                    ['key' => 'openai_api_key', 'label' => 'OpenAI API key', 'input' => 'secret', 'rules' => ['nullable', 'string', 'max:400'],
-                        'help' => 'Optional. Only needed if you switch the provider to OpenAI.'],
+                    ['key' => 'cloudflare_ai_token', 'label' => 'Cloudflare Workers AI token', 'input' => 'secret', 'rules' => ['nullable', 'string', 'max:400'],
+                        'help' => 'Optional. Backup article writer when Gemini fails, and AI illustrations. Needs CLOUDFLARE_ACCOUNT_ID in .env.'],
                     ['key' => 'news_api_key', 'label' => 'News API key', 'input' => 'secret', 'rules' => ['nullable', 'string', 'max:400'],
                         'help' => 'Optional. Adds newsapi.org as an extra trending source; Google Trends and Google News need no key.'],
                 ],

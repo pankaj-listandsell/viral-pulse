@@ -56,8 +56,30 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'is_active' => 'boolean',
+            'is_author' => 'boolean',
+            'author_categories' => 'array',
             'last_login_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Desk authors are found by username, which is unique and URL-safe.
+     */
+    public function authorUrl(): ?string
+    {
+        return $this->is_author && $this->username ? route('authors.show', $this->username) : null;
+    }
+
+    /**
+     * Initials for the avatar badge: "ViralPulse News Desk" gives "ND", the
+     * site prefix being the same on every desk and telling them apart not at all.
+     */
+    public function initials(): string
+    {
+        $words = collect(preg_split('/\s+/', trim(str_replace('ViralPulse', '', $this->name))))
+            ->filter(fn (string $word) => ctype_alpha($word[0] ?? ''));
+
+        return strtoupper(implode('', $words->take(2)->map(fn (string $word) => $word[0])->all())) ?: 'VP';
     }
 
     public function posts(): HasMany
@@ -106,5 +128,10 @@ class User extends Authenticatable
     public function scopeAdmins(Builder $query): Builder
     {
         return $query->where('is_admin', true);
+    }
+
+    public function scopeAuthors(Builder $query): Builder
+    {
+        return $query->where('is_author', true);
     }
 }

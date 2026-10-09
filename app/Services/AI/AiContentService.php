@@ -82,10 +82,9 @@ class AiContentService
 
                     $response = $fallback->generate($request, $system, $user);
 
-                    $generation->update([
-                        'provider' => $fallback->name(),
-                        'model' => $fallback->model(),
-                    ]);
+                    // The article is the fallback's from here on, and the
+                    // record below must say so rather than credit the primary.
+                    $provider = $fallback;
                 } catch (AiGenerationException $fallbackException) {
                     $generation->update([
                         'status' => AiGenerationStatus::Failed,

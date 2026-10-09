@@ -65,6 +65,7 @@ foreach (config('horoscope.paths') as $hLocale => $hPaths) {
 Route::get('categories', [ArchiveController::class, 'categories'])->name('categories.index');
 Route::get('category/{category}', [ArchiveController::class, 'category'])->name('categories.show');
 Route::get('tag/{tag}', [ArchiveController::class, 'tag'])->name('tags.show');
+Route::get('author/{username}', [ArchiveController::class, 'author'])->name('authors.show');
 
 Route::get('search/live', [SearchController::class, 'live'])->name('search.live');
 Route::get('search', SearchController::class)->middleware('throttle:search')->name('search');

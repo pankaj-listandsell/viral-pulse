@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Log;
 class ChainedImageGenerator implements FeaturedImageGenerator
 {
     private const GENERATORS = [
+        'cloudflare' => CloudflareImageGenerator::class,
         'illustration' => AiIllustrationGenerator::class,
         'stock' => StockPhotoGenerator::class,
         'card' => BrandCardGenerator::class,

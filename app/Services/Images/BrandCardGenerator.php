@@ -294,7 +294,9 @@ class BrandCardGenerator implements FeaturedImageGenerator
 
     private function blackFont(): ?string
     {
-        foreach (self::CANDIDATE_BLACK_FONTS as $path) {
+        // The bundled font first: shared hosting ships no system fonts, and
+        // without one every card silently failed and posts went out bare.
+        foreach ([resource_path('fonts/FiraSans-Black.ttf'), ...self::CANDIDATE_BLACK_FONTS] as $path) {
             if (is_file($path)) {
                 return $path;
             }
@@ -305,7 +307,7 @@ class BrandCardGenerator implements FeaturedImageGenerator
 
     private function boldFont(): string
     {
-        foreach (self::CANDIDATE_BOLD_FONTS as $path) {
+        foreach ([resource_path('fonts/FiraSans-Bold.ttf'), ...self::CANDIDATE_BOLD_FONTS] as $path) {
             if (is_file($path)) {
                 return $path;
             }

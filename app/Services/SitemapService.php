@@ -6,6 +6,7 @@ use App\Enums\PostStatus;
 use App\Models\Category;
 use App\Models\Post;
 use App\Models\Tag;
+use App\Models\User;
 use App\Services\LocaleService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -172,6 +173,16 @@ class SitemapService
             ];
 
             $entries = [...$entries, ...$this->horoscopeEntries()];
+
+            // Desk pages that have published something; an empty one is
+            // noindex, so listing it would contradict the page.
+            $desks = User::authors()->active()
+                ->whereHas('posts', fn ($query) => $query->where('status', PostStatus::Published)->where('published_at', '<=', now()))
+                ->pluck('username');
+
+            foreach ($desks as $username) {
+                $entries[] = ['loc' => route('authors.show', $username), 'lastmod' => null];
+            }
 
             foreach (['about', 'privacy', 'terms', 'disclaimer'] as $page) {
                 $entries[] = ['loc' => route('pages.show', $page), 'lastmod' => null];

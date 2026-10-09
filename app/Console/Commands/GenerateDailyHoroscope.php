@@ -11,6 +11,7 @@ use App\Models\Category;
 use App\Models\User;
 use App\Services\AI\AiContentService;
 use App\Services\AI\GenerationRequest;
+use App\Services\Images\HoroscopeImagePool;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
@@ -22,7 +23,7 @@ class GenerateDailyHoroscope extends Command
 
     protected $description = 'Generate a comprehensive daily horoscope/rashifal article covering all 12 zodiac signs';
 
-    public function handle(AiContentService $contentService): int
+    public function handle(AiContentService $contentService, HoroscopeImagePool $images): int
     {
         $enabled = config('trending.automation.enabled', true);
         if (!$enabled && !$this->option('force')) {
@@ -129,6 +130,9 @@ CONTEXT;
             categoryId: $category->id,
             createPost: true,
             publishAt: null, // Publish immediately
+            // One of the fixed horoscope pictures, picked at random, rather
+            // than a freshly drawn one every morning.
+            featuredImage: $images->pick($author),
         );
 
         $this->info("Daily Horoscope generation job successfully queued under ID: {$generation->id}");

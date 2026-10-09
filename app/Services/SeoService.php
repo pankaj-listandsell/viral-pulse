@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Category;
 use App\Models\Post;
 use App\Models\Tag;
+use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -55,10 +56,9 @@ class SeoService
             'type' => 'article',
             'published_at' => $post->published_at,
             'modified_at' => $post->updated_at,
-            // The masthead, matching the byline on the page and the author in
-            // the Article schema. A staff account's name on an AI-drafted
-            // article would be a byline nobody earned.
-            'author' => $this->siteName(),
+            // Matches the byline on the page and the author in the Article
+            // schema: the desk's page when there is one, else the masthead.
+            'author' => $post->author?->authorUrl() ?? $this->siteName(),
             'schemas' => $schemas,
         ];
     }
@@ -112,6 +112,53 @@ class SeoService
                 ]),
             ],
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function forAuthor(User $author, int $page = 1): array
+    {
+        $url = route('authors.show', $author->username);
+
+        return [
+            'title' => "{$author->name}: latest stories",
+            'description' => $this->description($author->bio ?: "Every story from the {$author->name}."),
+            'canonical' => $url,
+            'image' => $this->imageUrl(null),
+            'robots' => $page > 1 ? 'noindex, follow' : null,
+            'schemas' => [
+                [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'ProfilePage',
+                    'url' => $url,
+                    'name' => $author->name,
+                    'mainEntity' => $this->authorSchema($author),
+                ],
+                $this->breadcrumbSchema([
+                    ['name' => 'Home', 'url' => route('home')],
+                    ['name' => $author->name, 'url' => $url],
+                ]),
+            ],
+        ];
+    }
+
+    /**
+     * A desk as a schema entity: an Organization that is part of the
+     * publication, because that is what it is. Typing it as a Person would
+     * claim a human author the page does not have.
+     *
+     * @return array<string, mixed>
+     */
+    public function authorSchema(User $author): array
+    {
+        return array_filter([
+            '@type' => 'Organization',
+            'name' => $author->name,
+            'url' => route('authors.show', $author->username),
+            'description' => $author->bio,
+            'parentOrganization' => $this->organizationSchema(),
+        ]);
     }
 
     /**
@@ -195,12 +242,11 @@ class SeoService
             'articleSection' => $post->category?->name,
             'keywords' => $post->seo_keywords,
             'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => route('posts.show', $post)],
-            // The publication, not a person. Articles are drafted by AI and
-            // reviewed by an editor, so naming one staff account on every one
-            // of them would be a byline nobody earned - and Google expects the
-            // author in the markup to be the author shown on the page, which
-            // is now the masthead. schema.org allows an Organization here.
-            'author' => $this->organizationSchema(),
+            // The desk shown in the byline, or the publication when the post
+            // has no desk. Never a person: articles are drafted by AI, so a
+            // staff name would be a byline nobody earned - and Google expects
+            // the author in the markup to match the one on the page.
+            'author' => $post->author?->is_author ? $this->authorSchema($post->author) : $this->organizationSchema(),
             'publisher' => $this->organizationSchema(),
         ]);
     }

@@ -22,7 +22,7 @@
             </h2>
             <p class="mt-2 text-sm text-amber-900 dark:text-amber-200">
                 Add <code class="rounded bg-amber-100 px-1 dark:bg-amber-500/20">GEMINI_API_KEY</code> or
-                <code class="rounded bg-amber-100 px-1 dark:bg-amber-500/20">OPENAI_API_KEY</code> to your
+                <code class="rounded bg-amber-100 px-1 dark:bg-amber-500/20">CLOUDFLARE_AI_TOKEN</code> to your
                 <code class="rounded bg-amber-100 px-1 dark:bg-amber-500/20">.env</code> file, then run
                 <code class="rounded bg-amber-100 px-1 dark:bg-amber-500/20">php artisan config:clear</code>.
                 Keys are deliberately not editable here — a key stored in the database would end up in every backup.

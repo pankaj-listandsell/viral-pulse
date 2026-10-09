@@ -34,9 +34,9 @@ class PostController extends Controller
         // still open one to preview it before it goes live.
         abort_unless($isLive || $request->user()?->canAccessAdminPanel(), 404);
 
-        // The author relation is deliberately not loaded: nothing public names
-        // a person any more, so fetching one is a query for nobody.
-        $post->load(['category:id,name,slug,color', 'tags:id,name,slug']);
+        // The author is a desk byline (never a person), shown on the page and
+        // named in the schema.
+        $post->load(['category:id,name,slug,color', 'tags:id,name,slug', 'author:id,name,username,bio,is_author']);
 
         $this->feed->withImages([$post]);
         $this->views->record($post, $request);

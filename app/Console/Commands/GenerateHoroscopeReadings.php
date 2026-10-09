@@ -36,7 +36,7 @@ class GenerateHoroscopeReadings extends Command
         }
 
         if (! $providers->hasAnyProvider()) {
-            $this->error('No AI provider is configured. Set GEMINI_API_KEY or OPENAI_API_KEY.');
+            $this->error('No AI provider is configured. Set GEMINI_API_KEY or CLOUDFLARE_AI_TOKEN.');
 
             return self::FAILURE;
         }

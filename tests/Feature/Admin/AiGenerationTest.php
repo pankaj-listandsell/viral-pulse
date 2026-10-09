@@ -375,21 +375,24 @@ class AiGenerationTest extends TestCase
 
     public function test_a_provider_without_a_key_cannot_be_selected(): void
     {
+        config(['ai.providers.cloudflare.key' => null]);
+
         $this->actingAs($this->admin)
-            ->post(route('admin.ai.settings'), ['ai_provider' => 'openai'])
+            ->post(route('admin.ai.settings'), ['ai_provider' => 'cloudflare'])
             ->assertSessionHasErrors('ai_provider');
     }
 
     public function test_the_provider_choice_is_saved(): void
     {
-        config(['ai.providers.openai.key' => 'another-test-key']);
+        config(['ai.providers.cloudflare.key' => 'another-test-key']);
+        $model = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
         $this->actingAs($this->admin)
-            ->post(route('admin.ai.settings'), ['ai_provider' => 'openai', 'ai_model' => 'gpt-4o'])
+            ->post(route('admin.ai.settings'), ['ai_provider' => 'cloudflare', 'ai_model' => $model])
             ->assertSessionHasNoErrors();
 
-        $this->assertDatabaseHas('settings', ['key' => 'ai_provider', 'value' => 'openai']);
-        $this->assertDatabaseHas('settings', ['key' => 'ai_model_openai', 'value' => 'gpt-4o']);
+        $this->assertDatabaseHas('settings', ['key' => 'ai_provider', 'value' => 'cloudflare']);
+        $this->assertDatabaseHas('settings', ['key' => 'ai_model_cloudflare', 'value' => $model]);
     }
 
     public function test_cost_is_calculated_for_model_ids_containing_dots(): void

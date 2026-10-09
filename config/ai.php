@@ -1,7 +1,7 @@
 <?php
 
 use App\Services\AI\Providers\GeminiProvider;
-use App\Services\AI\Providers\OpenAiProvider;
+use App\Services\AI\Providers\CloudflareProvider;
 
 return [
 
@@ -41,11 +41,14 @@ return [
             // return 404 "no longer available to new users", which surfaced as
             // every generation failing at once. Every id below was confirmed
             // working with a live call before being listed here.
-            'model' => env('GEMINI_MODEL', 'gemini-3.6-flash'),
+            // Flash Lite by default: the free tier allowed Flash only 20
+            // requests a day, which one morning's articles used up and left
+            // the site publishing nothing for days.
+            'model' => env('GEMINI_MODEL', 'gemini-3.5-flash-lite'),
             'models' => [
-                'gemini-3.6-flash' => 'Gemini 3.6 Flash — newest, recommended',
+                'gemini-3.5-flash-lite' => 'Gemini 3.5 Flash Lite — cheapest, highest free limit (default)',
+                'gemini-3.6-flash' => 'Gemini 3.6 Flash — newest, best quality',
                 'gemini-3.5-flash' => 'Gemini 3.5 Flash',
-                'gemini-3.5-flash-lite' => 'Gemini 3.5 Flash Lite — cheapest',
                 // An alias that always points at the current Flash. Convenient,
                 // but it moves without warning and the price table below cannot
                 // follow it, so it is not the default.
@@ -54,16 +57,18 @@ return [
             'endpoint' => 'https://generativelanguage.googleapis.com/v1beta',
         ],
 
-        'openai' => [
-            'label' => 'OpenAI',
-            'driver' => OpenAiProvider::class,
-            'key' => env('OPENAI_API_KEY'),
-            'model' => env('OPENAI_MODEL', 'gpt-4o'),
+        // Listed after Gemini on purpose: when the selected provider fails,
+        // the next configured one in this list writes the article instead.
+        'cloudflare' => [
+            'label' => 'Cloudflare Workers AI',
+            'driver' => CloudflareProvider::class,
+            'key' => env('CLOUDFLARE_AI_TOKEN'),
+            'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
+            'model' => env('CLOUDFLARE_TEXT_MODEL', '@cf/meta/llama-3.3-70b-instruct-fp8-fast'),
             'models' => [
-                'gpt-4o' => 'GPT-4o',
-                'gpt-4o-mini' => 'GPT-4o mini — cheaper',
+                '@cf/meta/llama-3.3-70b-instruct-fp8-fast' => 'Llama 3.3 70B — fast, free allowance',
             ],
-            'endpoint' => 'https://api.openai.com/v1',
+            'max_tokens' => 8000,
         ],
 
     ],

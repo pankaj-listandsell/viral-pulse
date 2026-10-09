@@ -114,21 +114,29 @@
                     </figure>
                 @endif
 
-                {{-- No personal byline. Articles here are drafted by AI and
-                     reviewed by an editor, so putting one staff member's
-                     name on every one of them would credit work they did
-                     not do. The Article schema names the publication as the
-                     author instead, which is both accurate and what the
-                     page shows. --}}
+                {{-- No personal byline. Articles here are drafted by AI, so
+                     a staff member's name on every one of them would credit
+                     work they did not do. The byline is the section's desk,
+                     or the masthead when a post has none - the same author
+                     the Article schema names. --}}
+                @php($desk = $post->author?->is_author ? $post->author : null)
                 <div class="mt-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-y border-gray-200 py-4 dark:border-gray-800">
                     <div class="flex items-center gap-2.5">
-                        <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-600 text-white">
-                            <x-icon name="flame" class="size-4" />
-                        </span>
+                        @if($desk)
+                            <x-author.avatar :author="$desk" />
+                        @else
+                            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-600 text-white">
+                                <x-icon name="flame" class="size-4" />
+                            </span>
+                        @endif
 
                         <div class="text-sm">
                             <p class="font-bold text-gray-900 dark:text-white">
-                                {{ $siteSettings['site_name'] ?? config('app.name') }}
+                                @if($desk)
+                                    By <a href="{{ $desk->authorUrl() }}" rel="author" class="hover:text-brand-600 dark:hover:text-brand-400">{{ $desk->name }}</a>
+                                @else
+                                    {{ $siteSettings['site_name'] ?? config('app.name') }}
+                                @endif
                             </p>
                             <p class="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                                 <time datetime="{{ $post->published_at?->toIso8601String() }}">
@@ -294,6 +302,24 @@
                             </a>
                         @endif
                     </nav>
+                @endif
+
+                @if($desk)
+                    <aside aria-label="About the author" class="mt-10 flex gap-4 rounded-2xl border border-gray-200 bg-gray-50/70 p-5 dark:border-gray-800 dark:bg-gray-900/40">
+                        <x-author.avatar :author="$desk" size="size-12 text-lg" />
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">Written by</p>
+                            <a href="{{ $desk->authorUrl() }}" rel="author" class="mt-0.5 block text-base font-black text-gray-900 hover:text-brand-600 dark:text-white dark:hover:text-brand-400">
+                                {{ $desk->name }}
+                            </a>
+                            @if($desk->bio)
+                                <p class="mt-1.5 text-sm leading-relaxed text-gray-600 dark:text-gray-400">{{ $desk->bio }}</p>
+                            @endif
+                            <a href="{{ $desk->authorUrl() }}" class="mt-2 inline-flex items-center gap-1 text-sm font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400">
+                                More from this desk <span aria-hidden="true">&rarr;</span>
+                            </a>
+                        </div>
+                    </aside>
                 @endif
 
                 @if($related->isNotEmpty())

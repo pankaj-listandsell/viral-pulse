@@ -89,20 +89,20 @@ return [
         |
         */
         'strategy' => [
-            '*' => ['illustration', 'stock', 'card'],
-            'news' => ['illustration', 'stock', 'card'],
-            'trending' => ['illustration', 'stock', 'card'],
-            'business' => ['illustration', 'stock', 'card'],
-            'technology' => ['illustration', 'stock', 'card'],
-            'sports' => ['illustration', 'stock', 'card'],
-            'travel' => ['illustration', 'stock', 'card'],
-            'education' => ['illustration', 'stock', 'card'],
-            'health' => ['illustration', 'stock', 'card'],
-            'entertainment' => ['illustration', 'stock', 'card'],
-            'lifestyle' => ['illustration', 'stock', 'card'],
-            'astrology' => ['illustration', 'stock', 'card'],
-            'devotional' => ['illustration', 'stock', 'card'],
-            'quiz-fun' => ['illustration', 'stock', 'card'],
+            '*' => ['illustration', 'stock', 'cloudflare', 'card'],
+            'news' => ['illustration', 'stock', 'cloudflare', 'card'],
+            'trending' => ['illustration', 'stock', 'cloudflare', 'card'],
+            'business' => ['illustration', 'stock', 'cloudflare', 'card'],
+            'technology' => ['illustration', 'stock', 'cloudflare', 'card'],
+            'sports' => ['illustration', 'stock', 'cloudflare', 'card'],
+            'travel' => ['illustration', 'stock', 'cloudflare', 'card'],
+            'education' => ['illustration', 'stock', 'cloudflare', 'card'],
+            'health' => ['illustration', 'stock', 'cloudflare', 'card'],
+            'entertainment' => ['illustration', 'stock', 'cloudflare', 'card'],
+            'lifestyle' => ['illustration', 'stock', 'cloudflare', 'card'],
+            'astrology' => ['illustration', 'stock', 'cloudflare', 'card'],
+            'devotional' => ['illustration', 'stock', 'cloudflare', 'card'],
+            'quiz-fun' => ['illustration', 'stock', 'cloudflare', 'card'],
         ],
 
         'stock' => [
@@ -114,6 +114,15 @@ return [
             'orientation' => 'landscape',
             // Below this the photo is worse than no photo on a wide card.
             'min_width' => 1200,
+        ],
+
+        'cloudflare' => [
+            // FLUX on Workers AI, inside the free daily allowance. Missing
+            // credentials mean this strategy is skipped and the next one runs.
+            'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
+            'token' => env('CLOUDFLARE_AI_TOKEN'),
+            'model' => env('CLOUDFLARE_IMAGE_MODEL', '@cf/black-forest-labs/flux-1-schnell'),
+            'steps' => 4,
         ],
 
         'illustration' => [

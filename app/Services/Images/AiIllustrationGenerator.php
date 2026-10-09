@@ -45,14 +45,6 @@ class AiIllustrationGenerator implements FeaturedImageGenerator
         $post->loadMissing(['tags', 'category', 'author']);
 
         try {
-            $openAiKey = config('ai.providers.openai.key') ?: env('OPENAI_API_KEY');
-            if (filled($openAiKey)) {
-                $image = $this->requestOpenAi($post, $openAiKey);
-                if ($image) {
-                    return $this->store($image, $post);
-                }
-            }
-
             $config = config('site.media.illustration');
             $key = config('ai.providers.gemini.key') ?: ($config['key'] ?? null);
 
@@ -70,55 +62,6 @@ class AiIllustrationGenerator implements FeaturedImageGenerator
 
             return null;
         }
-    }
-
-    private function requestOpenAi(Post $post, string $key): ?string
-    {
-        $url = 'https://api.openai.com/v1/images/generations';
-
-        try {
-            $response = Http::timeout(60)
-                ->withToken($key)
-                ->asJson()
-                ->post($url, [
-                    'model' => env('OPENAI_IMAGE_MODEL', 'gpt-image-1-mini'),
-                    'prompt' => $this->prompt($post),
-                    'n' => 1,
-                    'size' => '1024x1024',
-                ]);
-        } catch (ConnectionException $e) {
-            Log::warning('OpenAI DALL-E could not be reached', ['error' => $e->getMessage()]);
-
-            return null;
-        }
-
-        if (! $response->successful()) {
-            Log::warning('OpenAI DALL-E request failed', [
-                'status' => $response->status(),
-                'post' => $post->id,
-                'body' => Str::limit((string) $response->body(), 300),
-            ]);
-
-            return null;
-        }
-
-        $encoded = $response->json('data.0.b64_json');
-        if (filled($encoded)) {
-            return base64_decode($encoded, true) ?: null;
-        }
-
-        $imageUrl = $response->json('data.0.url');
-        if (filled($imageUrl)) {
-            try {
-                $imageResponse = Http::timeout(30)->get($imageUrl);
-                return $imageResponse->successful() ? $imageResponse->body() : null;
-            } catch (\Throwable $e) {
-                Log::warning('Could not download generated DALL-E image', ['url' => $imageUrl, 'error' => $e->getMessage()]);
-                return null;
-            }
-        }
-
-        return null;
     }
 
     /**

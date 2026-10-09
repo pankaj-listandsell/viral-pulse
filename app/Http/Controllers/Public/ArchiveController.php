@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Tag;
+use App\Models\User;
 use App\Services\ContentFeedService;
 use App\Services\SeoService;
 use App\Services\SettingsService;
@@ -187,6 +188,29 @@ class ArchiveController extends Controller
             'subheading' => $tag->description,
             'posts' => $posts,
             'crumbs' => [['name' => "#{$tag->name}", 'url' => route('tags.show', $tag)]],
+            'seo' => $seo,
+        ]);
+    }
+
+    public function author(Request $request, string $username): View
+    {
+        $author = User::authors()->active()->where('username', $username)->firstOrFail();
+
+        $posts = $this->feed->paginate(
+            $this->feed->base()->where('author_id', $author->id)->orderByDesc('published_at'),
+            $this->perPage()
+        );
+
+        $seo = $this->seo->forAuthor($author, $request->integer('page', 1));
+        $seo['schemas'][] = $this->seo->itemListSchema($posts->getCollection(), $author->name);
+        $seo['robots'] = $this->archiveRobots($posts->total(), $seo['robots'] ?? null);
+
+        return view('public.archive', [
+            'heading' => $author->name,
+            'subheading' => $author->bio,
+            'author' => $author,
+            'posts' => $posts,
+            'crumbs' => [['name' => $author->name, 'url' => route('authors.show', $author->username)]],
             'seo' => $seo,
         ]);
     }

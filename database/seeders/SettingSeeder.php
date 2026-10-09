@@ -118,7 +118,7 @@ class SettingSeeder extends Seeder
             // Secrets. Encrypted at rest with APP_KEY; .env still works as a
             // fallback so an existing install keeps running untouched.
             ['group' => 'keys', 'key' => 'gemini_api_key', 'value' => null, 'type' => SettingType::Encrypted],
-            ['group' => 'keys', 'key' => 'openai_api_key', 'value' => null, 'type' => SettingType::Encrypted],
+            ['group' => 'keys', 'key' => 'cloudflare_ai_token', 'value' => null, 'type' => SettingType::Encrypted],
             ['group' => 'keys', 'key' => 'news_api_key', 'value' => null, 'type' => SettingType::Encrypted],
 
             // AI limits and data retention.
@@ -130,7 +130,7 @@ class SettingSeeder extends Seeder
 
             ['group' => 'ai', 'key' => 'ai_provider', 'value' => (string) config('ai.provider', 'gemini'), 'type' => SettingType::String],
             ['group' => 'ai', 'key' => 'ai_model_gemini', 'value' => (string) config('ai.providers.gemini.model'), 'type' => SettingType::String],
-            ['group' => 'ai', 'key' => 'ai_model_openai', 'value' => (string) config('ai.providers.openai.model'), 'type' => SettingType::String],
+            ['group' => 'ai', 'key' => 'ai_model_cloudflare', 'value' => (string) config('ai.providers.cloudflare.model'), 'type' => SettingType::String],
 
             // AI. Seeded from the environment rather than hardcoded: these
             // rows override config once set, so a default that disagreed with

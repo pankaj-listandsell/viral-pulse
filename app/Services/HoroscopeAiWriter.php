@@ -75,14 +75,26 @@ class HoroscopeAiWriter
      */
     private function writeBatch(string $locale, string $period, Carbon $date, array $batch): array
     {
-        $provider = $this->providers->resolve();
-
-        $result = $provider->generateJson(
+        $arguments = [
             $this->systemPrompt($locale, $period),
             $this->userPrompt($locale, $period, $date, $batch),
             $this->schema(array_keys($batch)),
             'horoscope_readings',
-        );
+        ];
+
+        try {
+            $result = $this->providers->resolve()->generateJson(...$arguments);
+        } catch (AiGenerationException $e) {
+            // Same rule as the article writer: when the selected provider is
+            // out of quota, the next configured one writes the readings.
+            $fallback = $this->providers->fallback();
+
+            if (! $fallback) {
+                throw $e;
+            }
+
+            $result = $fallback->generateJson(...$arguments);
+        }
 
         $start = HoroscopeReading::periodStart($period, $date);
         $written = [];
